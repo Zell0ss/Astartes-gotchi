@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# PyMakr (platform-specific)
+.pymakr.conf
+
+# MicroPython
+*.mpy
+
+# Backups
+*.bak
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Save files (on device)
+astartes_save.json
+astartes_save.bak
+
+# Logs
+*.log
