@@ -1,0 +1,10 @@
+# Astartes-Gotchi - Development Requirements
+# These tools are for PC development/deployment only
+# The M5Stack Core2 doesn't need these (MicroPython has builtins)
+
+# MicroPython deployment tools
+esptool==4.7.0        # Flash MicroPython firmware to ESP32
+mpremote==1.21.0      # Remote control MicroPython devices
+
+# Optional: Testing (if you want to run tests on PC)
+# No external testing framework needed - tests use standard assertions

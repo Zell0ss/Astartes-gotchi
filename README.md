@@ -31,21 +31,36 @@ Guide a Space Marine neophyte from recruitment to becoming a veteran of the Empe
 
 ### Setup
 
-1. **Flash MicroPython** (first time only):
+1. **Clone this repository**:
+   ```bash
+   git clone https://github.com/Zell0ss/Astartes-gotchi.git
+   cd Astartes-gotchi
+   ```
+
+2. **Set up development environment**:
+
+   **Linux/macOS:**
+   ```bash
+   ./setup.sh
+   source .venv/bin/activate
+   ```
+
+   **Windows:**
+   ```cmd
+   setup.bat
+   .venv\Scripts\activate.bat
+   ```
+
+   This installs `esptool` and `mpremote` in a virtual environment.
+
+3. **Flash MicroPython** (first time only):
    ```bash
    # See SETUP_MICROPYTHON.md for detailed instructions
-   pip install esptool mpremote
    esptool --chip esp32s3 --port /dev/ttyUSB0 erase_flash
    esptool --chip esp32s3 --port /dev/ttyUSB0 write_flash -z 0x0 firmware.bin
    ```
 
-2. **Clone this repository**:
-   ```bash
-   git clone <repo-url>
-   cd AstarGotchi
-   ```
-
-3. **Deploy to device**:
+4. **Deploy to device**:
 
    **Linux/macOS:**
    ```bash
