@@ -1,0 +1,240 @@
+# Claude Memory: Astartes-Gotchi Project
+
+**Last Updated**: 2024-12-18
+**Session**: Initial project setup with Claude Code
+**User**: Josem (Zelloss) - Manager de Robotics, Madrid
+
+---
+
+## PROJECT IDENTITY
+
+**Name**: Astartes-Gotchi
+**Type**: Warhammer 40K Tamagotchi for M5Stack Core2
+**Language**: MicroPython
+**Repository**: https://github.com/Zell0ss/Astartes-gotchi
+**Status**: MVP Structure Complete (Phase 1: 40%)
+
+---
+
+## USER CONTEXT
+
+**Name for Claude Code**: "Code" (distinguishing from "daVinci" who did design)
+**Development Environments**:
+- Windows (for portable work)
+- LainOS i3 (Linux desktop)
+
+**User Preferences**:
+- English for game text (better 40K lore resonance)
+- Clean, functional code over over-engineering
+- Iterative development approach
+- Testing on actual hardware
+
+---
+
+## PROJECT STATE (Current Session)
+
+### What Was Accomplished Today:
+
+1. ✅ **Complete project structure created**
+   - src/ with boot.py, main.py, config.py
+   - lib/ with space_marine.py, ui.py, save_manager.py
+   - tools/ with deploy scripts (Linux + Windows)
+   - tests/ with unit tests (all passing)
+
+2. ✅ **Core game logic implemented**
+   - SpaceMarine class (562 lines) - full stat system
+   - Evolution algorithm (11 chapter paths)
+   - Save/load system (atomic writes, backups)
+   - UI system (hardware abstraction)
+
+3. ✅ **Documentation complete**
+   - CLAUDE.md - Development guide
+   - SETUP_MICROPYTHON.md - Firmware installation
+   - DEVELOPMENT_WORKFLOW.md - VSCode setup
+   - QUICKSTART.md - 15-minute quick start
+   - README.md - Project overview
+   - PROJECT_STATUS.md - Current status
+
+4. ✅ **Virtual environment setup**
+   - requirements.txt (esptool, mpremote)
+   - setup.sh / setup.bat (automated)
+   - .gitignore configured
+
+5. ✅ **Git repository**
+   - Remote: git@github.com:Zell0ss/Astartes-gotchi.git
+   - All code pushed to main branch
+   - 2 commits today
+
+### Design Decisions Confirmed:
+
+1. ✅ Permadeath penalty: +10 corruption next run if died to Chaos
+2. ✅ Pause: "Stasis Pod" (lore-friendly, 1x/day)
+3. ✅ Language: English (40K lore authenticity)
+4. ✅ Audio: Start with beeps → evolve to SFX later
+5. ✅ Difficulty: Single balanced mode
+
+### Code Statistics:
+
+- Total Python code: ~1,200 lines
+- Documentation: ~2,000 lines
+- Files created: 25+ files
+- Unit tests: 6 tests (all passing ✅)
+
+---
+
+## NEXT STEPS (What to do tomorrow)
+
+### Immediate Priority: **Hardware Testing**
+
+**User needs to**:
+1. Run `./setup.sh` to create venv
+2. Flash MicroPython to M5Stack Core2 (follow SETUP_MICROPYTHON.md)
+3. Deploy code: `./tools/deploy.sh /dev/ttyUSB0`
+4. Test basic functionality on device
+5. Report any hardware issues
+
+**Expected issues to watch for**:
+- M5Stack imports (from m5stack import LCD, Touch)
+- Touch sensitivity calibration
+- Memory constraints on ESP32-S3
+- Battery life monitoring
+
+### Phase 1 Completion Tasks:
+
+- [ ] Verify boot sequence on hardware
+- [ ] Test stat decay in real-time
+- [ ] Test save/load persistence across reboots
+- [ ] Test touch input responsiveness
+- [ ] Run 24-hour stability test
+- [ ] Measure FPS and battery consumption
+
+### Phase 2 (Next):
+
+- Evolution sprites (placeholder colored rectangles → actual sprites)
+- Evolution cutscenes
+- 4 initial chapters fully tested (Ultramarine, Space Wolf, Khorne, Nurgle)
+
+---
+
+## TECHNICAL ARCHITECTURE (Quick Reference)
+
+### File Structure:
+```
+src/
+├── boot.py              - Boot sequence (runs first)
+├── main.py              - Game loop (entry point)
+├── config.py            - All constants (tuning parameters)
+└── lib/
+    ├── space_marine.py  - Core logic (stats, evolution)
+    ├── ui.py            - Display/input (M5Stack abstraction)
+    ├── save_manager.py  - Persistence (JSON, atomic)
+    └── chaos_system.py  - Chaos whispers (Phase 3)
+```
+
+### Key Classes:
+
+**SpaceMarine** (space_marine.py):
+- 5 main stats: geneseed_purity, battle_fury, sustenance, discipline, corruption
+- Evolution stages: Neophyte → Scout → Battle Brother → Veteran
+- Chapter determination algorithm (_determine_chapter)
+- 11 evolution paths implemented
+
+**AstartesUI** (ui.py):
+- Hardware abstraction (works on PC + device)
+- render(marine) - main render loop
+- get_input() - touch button handling
+- Currently in stub mode (needs M5Stack hardware to fully test)
+
+**SaveManager** (save_manager.py):
+- Atomic writes (temp file → rename)
+- Backup system (*.bak)
+- JSON format
+
+### Hardware Platform:
+
+- **Device**: M5Stack Core2 v1.1
+- **Chip**: ESP32-S3
+- **Screen**: 320x240 touchscreen
+- **Firmware**: MicroPython (custom M5Stack build)
+
+---
+
+## IMPORTANT REMINDERS
+
+### User Preferences:
+- Call me "Code" (vs "daVinci" for design Claude)
+- User works in both Windows and LainOS
+- Prefers English for game text
+- Wants iterative, test-driven development
+
+### Development Workflow:
+- VSCode + PyMakr (recommended setup)
+- Alternative: mpremote CLI
+- Cross-platform scripts provided
+
+### Code Philosophy:
+- MVP first, polish later
+- No over-engineering
+- Hardware abstraction (stub mode for PC testing)
+- Debug mode enabled (config.DEBUG = True)
+
+---
+
+## CRITICAL FILES TO READ (if resuming)
+
+1. **CLAUDE.md** - Complete development guide
+2. **PROJECT_STATUS.md** - Current phase and todos
+3. **src/lib/space_marine.py** - Core game logic
+4. **src/config.py** - All tuning parameters
+
+---
+
+## CONVERSATION CONTINUITY
+
+**Last topic discussed**: Virtual environment setup
+**Last action**: Pushed venv setup files to GitHub (commit 96b624c)
+**User's next likely action**: Flash MicroPython to device
+
+**Context for next session**:
+- User will likely have hardware questions (M5Stack specific)
+- May encounter import errors (m5stack module)
+- Will need help debugging first hardware deployment
+- May want to adjust config.py values after testing
+
+---
+
+## WARHAMMER 40K LORE (Quick Reference)
+
+**Key phrases for flavor**:
+- "The Emperor protects"
+- "For the Emperor!"
+- "HERESY!" (for corruption detection)
+- "Know no fear"
+- "Even in death I still serve"
+
+**Chaos Gods**:
+- Khorne - Violence, blood, skulls
+- Slaanesh - Excess, pleasure, addiction
+- Nurgle - Decay, disease, acceptance
+- Tzeentch - Change, sorcery, scheming
+
+---
+
+## REPO INFO
+
+**URL**: https://github.com/Zell0ss/Astartes-gotchi
+**Branch**: main
+**Latest commit**: 96b624c "Add Python virtual environment setup"
+
+**Clone command**:
+```bash
+git clone git@github.com:Zell0ss/Astartes-gotchi.git
+cd Astartes-gotchi
+./setup.sh
+```
+
+---
+
+**End of Memory**
+
+For the Emperor! 🦅⚔️
