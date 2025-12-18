@@ -375,8 +375,8 @@ git push -u origin main
 
 1. **Clone the repo:**
    ```powershell
-   git clone git@github.com:josem/astarges-gotchi.git
-   cd astarges-gotchi
+   git clone git@github.com:josem/Astartes-gotchi.git
+   cd Astartes-gotchi
    ```
 
 2. **Install tools:**
@@ -399,8 +399,8 @@ git push -u origin main
 
 1. **Clone the repo (if not already there):**
    ```bash
-   git clone git@github.com:josem/astarges-gotchi.git
-   cd astarges-gotchi
+   git clone git@github.com:josem/Astartes-gotchi.git
+   cd Astartes-gotchi
    ```
 
 2. **Install tools:**
@@ -531,7 +531,7 @@ MicroPython on M5Stack Core2 has a simple filesystem:
 
 ```python
 # main.py
-print(">>> Starting Astarges-Gotchi")
+print(">>> Starting Astartes-Gotchi")
 print(f">>> Marine stats: {marine.geneseed_purity}")
 
 # Output appears in PyMakr console or serial terminal
@@ -589,10 +589,10 @@ gc.collect()
 **Stream logs to file on PC:**
 ```bash
 # Linux:
-mpremote connect /dev/ttyUSB0 repl > astarges_log.txt
+mpremote connect /dev/ttyUSB0 repl > Astartes_log.txt
 
 # Windows:
-mpremote connect COM3 repl > astarges_log.txt
+mpremote connect COM3 repl > Astartes_log.txt
 ```
 
 ---
@@ -698,7 +698,7 @@ import os
 import time
 
 # Optional: Set up WiFi, RTC, etc.
-print(">>> Astarges-Gotchi booting...")
+print(">>> Astartes-Gotchi booting...")
 
 # Check if main.py exists
 if 'main.py' in os.listdir():
@@ -836,7 +836,7 @@ Edit (VSCode) → Save → Upload (Ctrl+Shift+U) → Test (M5Stack) → Debug (R
 2. Create `.pymakr.conf`
 3. Upload test script
 4. Verify everything works
-5. Start building Astarges-Gotchi! 🦅⚔️
+5. Start building Astartes-Gotchi! 🦅⚔️
 
 ---
 
