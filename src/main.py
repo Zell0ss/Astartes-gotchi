@@ -122,8 +122,13 @@ def handle_action(action, marine, ui):
         marine.clean()
     elif action == "status":
         ui.show_status_screen(marine)
-    elif action == "codex":
-        marine.discipline_drill()
+    elif action == "power":
+        # Save before power off
+        from lib.save_manager import SaveManager
+        save_mgr = SaveManager()
+        save_mgr.save(marine.to_dict())
+        print(">>> Saved before power off")
+        ui.power_off()
     else:
         print(f">>> Unknown action: {action}")
 

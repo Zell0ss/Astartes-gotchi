@@ -10,42 +10,38 @@ class AstartesUI:
     """
 
     def __init__(self):
-        """Initialize UI system - hardware abstraction"""
-        # TODO: When testing on actual hardware, import M5Stack modules
-        # For now, this is a stub for development
-
+        """Initialize UI system - UIFlow firmware"""
         if config.DEBUG:
-            print(">>> AstartesUI initialized (STUB MODE)")
-            print(">>> Replace with M5Stack imports when on device")
+            print(">>> AstartesUI initializing...")
 
-        # Placeholder for hardware modules
-        self.lcd = None
-        self.touch = None
-        self.speaker = None
-
-        # Try to initialize hardware (will fail on PC)
+        # Try to initialize UIFlow M5Stack hardware
         try:
-            from m5stack import LCD, Touch, Speaker
-            self.lcd = LCD()
-            self.touch = Touch()
-            self.speaker = Speaker()
+            import M5
+            M5.begin()
+            self.M5 = M5
             self.hardware_available = True
             if config.DEBUG:
-                print(">>> M5Stack hardware detected!")
+                print(">>> UIFlow M5Stack hardware initialized!")
         except ImportError:
+            self.M5 = None
             self.hardware_available = False
             if config.DEBUG:
                 print(">>> Running in simulation mode (no hardware)")
 
-        # Button regions (x, y, w, h)
-        self.btn_feed = (10, 200, 65, 30)
-        self.btn_combat = (85, 200, 75, 30)
-        self.btn_pray = (170, 200, 65, 30)
-        self.btn_clean = (245, 200, 65, 30)
-        self.btn_status = (10, 235, 100, 30)
-        self.btn_codex = (120, 235, 100, 30)
+        # Button regions (x, y, w, h) - Optimized for 320x240 screen
+        # First row (3 buttons)
+        self.btn_feed = (5, 195, 100, 20)
+        self.btn_combat = (110, 195, 100, 20)
+        self.btn_pray = (215, 195, 100, 20)
 
-        self.last_touch = None
+        # Second row (3 buttons)
+        self.btn_clean = (5, 218, 100, 20)
+        self.btn_status = (110, 218, 100, 20)
+        self.btn_power = (215, 218, 100, 20)  # Power off button
+
+        # Touch debounce
+        self.last_touch_time = 0
+        self.touch_cooldown = 500  # milliseconds between touches
 
     def show_boot_screen(self):
         """Display boot screen"""
@@ -55,9 +51,15 @@ class AstartesUI:
             print(">>> For the Emperor!")
             return
 
-        self.lcd.clear(config.COLOR_BG)
-        self.lcd.print("ASTARTES-GOTCHI", 80, 100, config.COLOR_IMPERIAL_GOLD)
-        self.lcd.print("For the Emperor!", 70, 130, config.COLOR_AQUILA_WHITE)
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+        self.M5.Lcd.setCursor(80, 100)
+        self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.print("ASTARTES-GOTCHI")
+
+        self.M5.Lcd.setCursor(70, 130)
+        self.M5.Lcd.setTextColor(config.COLOR_AQUILA_WHITE)
+        self.M5.Lcd.print("For the Emperor!")
 
     def render(self, marine):
         """
@@ -87,7 +89,7 @@ class AstartesUI:
     def draw_background(self):
         """Draw background"""
         if self.hardware_available:
-            self.lcd.clear(config.COLOR_BG)
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
 
     def draw_header(self, marine):
         """Draw header with name and chapter"""
@@ -95,7 +97,10 @@ class AstartesUI:
             return
 
         text = f"{marine.name} - Stage {marine.current_stage}"
-        self.lcd.print(text, 10, 5, config.COLOR_TEXT)
+        self.M5.Lcd.setCursor(10, 5)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.print(text)
 
     def draw_marine_sprite(self, marine):
         """Draw marine sprite (placeholder for now)"""
@@ -118,7 +123,7 @@ class AstartesUI:
         else:
             color = 0x7BEF  # Grey (no chapter yet)
 
-        self.lcd.rect(x, y, config.SPRITE_SIZE, config.SPRITE_SIZE, color, color)
+        self.M5.Lcd.fillRect(x, y, config.SPRITE_SIZE, config.SPRITE_SIZE, color)
 
     def draw_stats(self, marine):
         """Draw stat bars"""
@@ -141,15 +146,18 @@ class AstartesUI:
             y = y_start + (i * 10)
 
             # Label
-            self.lcd.print(f"{name}:", 10, y, config.COLOR_TEXT)
+            self.M5.Lcd.setCursor(10, y)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.print(f"{name}:")
 
             # Bar background
-            self.lcd.rect(110, y, bar_width, bar_height, config.COLOR_BUTTON, config.COLOR_BUTTON)
+            self.M5.Lcd.fillRect(110, y, bar_width, bar_height, config.COLOR_BUTTON)
 
             # Filled portion
             filled_width = int(bar_width * value / 100)
             if filled_width > 0:
-                self.lcd.rect(110, y, filled_width, bar_height, color, color)
+                self.M5.Lcd.fillRect(110, y, filled_width, bar_height, color)
 
     def draw_buttons(self):
         """Draw touch buttons"""
@@ -162,12 +170,15 @@ class AstartesUI:
             (self.btn_pray, "PRAY", config.COLOR_BUTTON),
             (self.btn_clean, "CLEAN", config.COLOR_BUTTON),
             (self.btn_status, "STATUS", config.COLOR_BUTTON),
-            (self.btn_codex, "CODEX", config.COLOR_BUTTON),
+            (self.btn_power, "POWER", config.COLOR_CORRUPTION),  # Red button for power
         ]
 
         for (x, y, w, h), label, color in buttons:
-            self.lcd.rect(x, y, w, h, color, color)
-            self.lcd.print(label, x + 5, y + 8, config.COLOR_TEXT)
+            self.M5.Lcd.fillRect(x, y, w, h, color)
+            self.M5.Lcd.setCursor(x + 5, y + 8)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.print(label)
 
     def get_input(self):
         """
@@ -179,24 +190,56 @@ class AstartesUI:
         if not self.hardware_available:
             return None
 
-        # Check for touch
-        if self.touch.get_count() > 0:
-            detail = self.touch.get_detail(0)
-            x, y = detail[1], detail[2]
+        # Update M5 state (CRITICAL for touch detection)
+        self.M5.update()
 
-            # Check which button was pressed
-            if self._point_in_rect(x, y, self.btn_feed):
-                return "feed"
-            elif self._point_in_rect(x, y, self.btn_combat):
-                return "combat"
-            elif self._point_in_rect(x, y, self.btn_pray):
-                return "pray"
-            elif self._point_in_rect(x, y, self.btn_clean):
-                return "clean"
-            elif self._point_in_rect(x, y, self.btn_status):
-                return "status"
-            elif self._point_in_rect(x, y, self.btn_codex):
-                return "codex"
+        # Check for touch (UIFlow API - correct syntax)
+        try:
+            touch_count = self.M5.Touch.getCount()
+            if touch_count > 0:
+                # Debounce: Check if enough time has passed since last touch
+                import time
+                current_time = time.ticks_ms()
+                time_since_last = time.ticks_diff(current_time, self.last_touch_time)
+
+                if time_since_last < self.touch_cooldown:
+                    # Too soon - ignore this touch
+                    return None
+
+                x = self.M5.Touch.getX()
+                y = self.M5.Touch.getY()
+
+                if config.DEBUG:
+                    print(f">>> Touch detected at ({x}, {y})")
+
+                # Update last touch time
+                self.last_touch_time = current_time
+
+                # Check which button was pressed
+                if self._point_in_rect(x, y, self.btn_feed):
+                    print(">>> Button: FEED")
+                    return "feed"
+                elif self._point_in_rect(x, y, self.btn_combat):
+                    print(">>> Button: COMBAT")
+                    return "combat"
+                elif self._point_in_rect(x, y, self.btn_pray):
+                    print(">>> Button: PRAY")
+                    return "pray"
+                elif self._point_in_rect(x, y, self.btn_clean):
+                    print(">>> Button: CLEAN")
+                    return "clean"
+                elif self._point_in_rect(x, y, self.btn_status):
+                    print(">>> Button: STATUS")
+                    return "status"
+                elif self._point_in_rect(x, y, self.btn_power):
+                    print(">>> Button: POWER OFF")
+                    return "power"
+                else:
+                    if config.DEBUG:
+                        print(f">>> Touch outside buttons")
+        except Exception as e:
+            if config.DEBUG:
+                print(f">>> Touch error: {e}")
 
         return None
 
@@ -245,6 +288,43 @@ class AstartesUI:
             print(f">>> [ERROR] {error_msg}")
 
         if self.hardware_available:
-            self.lcd.clear(config.COLOR_BG)
-            self.lcd.print("ERROR", 120, 100, config.COLOR_CORRUPTION)
-            self.lcd.print(error_msg[:30], 50, 130, config.COLOR_TEXT)
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+            self.M5.Lcd.setCursor(120, 100)
+            self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.print("ERROR")
+
+            self.M5.Lcd.setCursor(50, 130)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.print(error_msg[:30])
+
+    def power_off(self):
+        """Power off the M5Stack device"""
+        if config.DEBUG:
+            print(">>> [POWER OFF] Shutting down...")
+
+        if self.hardware_available:
+            # Show shutdown screen
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+            self.M5.Lcd.setCursor(70, 100)
+            self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.print("For the Emperor!")
+
+            self.M5.Lcd.setCursor(90, 130)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.print("Powering off...")
+
+            import time
+            time.sleep(1)
+
+            # Power off via AXP192/AXP2101
+            try:
+                self.M5.Power.powerOff()
+            except:
+                # Fallback: deep sleep (functionally similar to power off)
+                import machine
+                machine.deepsleep()

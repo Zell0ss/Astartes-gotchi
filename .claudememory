@@ -1,7 +1,7 @@
 # Claude Memory: Astartes-Gotchi Project
 
-**Last Updated**: 2024-12-18
-**Session**: Initial project setup with Claude Code
+**Last Updated**: 2024-12-29
+**Session**: Hardware setup - M5Stack Core2 flashing preparation
 **User**: Josem (Zelloss) - Manager de Robotics, Madrid
 
 ---
@@ -12,7 +12,7 @@
 **Type**: Warhammer 40K Tamagotchi for M5Stack Core2
 **Language**: MicroPython
 **Repository**: https://github.com/Zell0ss/Astartes-gotchi
-**Status**: MVP Structure Complete (Phase 1: 40%)
+**Status**: MVP Structure Complete (Phase 1: 40% → 50% - Hardware prep done)
 
 ---
 
@@ -31,9 +31,155 @@
 
 ---
 
-## PROJECT STATE (Current Session)
+## PROJECT STATE
 
-### What Was Accomplished Today:
+### Session 2024-12-29 Progress: ✅ HARDWARE SETUP COMPLETE
+
+**Summary**: Successfully flashed UIFlow firmware, updated code for UIFlow API, deployed to M5Stack. Currently debugging initial execution.
+
+1. ✅ **Documentation improved**
+   - Added "🐧 Linux Quick Start (TL;DR)" section to SETUP_MICROPYTHON.md
+   - Streamlined Linux-specific flashing instructions
+   - Updated table of contents
+
+2. ✅ **Hardware connection established**
+   - M5Stack Core2 detected on Linux (Sony Vaio - LainOS i3)
+   - Identified as /dev/ttyACM0 (cdc_acm driver, not CH340)
+   - User added to dialout group and rebooted
+   - Permissions verified
+
+3. ✅ **SETUP_MICROPYTHON.md updated (hardware fixes)**:
+   - Corrected chip type: esp32 (not esp32s3) - CRITICAL for Core2 v1.1
+   - Corrected port: /dev/ttyACM0 (not ttyUSB0)
+   - Fixed hexadecimal format: 0x0 (not 0)
+   - Updated all commands in Linux Quick Start
+   - Added troubleshooting section for chip detection
+
+4. ✅ **Firmware backup completed**:
+   - Command: `esptool.py --chip esp32 --port /dev/ttyACM0 read_flash 0x0 0x400000 m5stack_core2_backup.bin`
+   - Backup saved as: m5stack_core2_backup.bin
+   - Size: 4MB (entire flash memory)
+   - Time: ~2-3 minutes
+
+5. ✅ **Discovered Core2 firmware distribution model**:
+   - Core2 UIFlow firmware is distributed ONLY through M5Burner
+   - GitHub releases (github.com/m5stack/uiflow-micropython/releases) contain firmware for Fire, Basic, Atom, etc. but NOT Core2
+   - Reason: Core2 has unique hardware (ILI9342C touchscreen, AXP192/AXP2101 power management) requiring specific firmware
+   - Manual esptool flashing only works with generic ESP32 firmware (no M5Stack libraries)
+   - For Astartes-Gotchi: M5Burner is REQUIRED to get M5Stack libraries
+
+6. ✅ **SETUP_MICROPYTHON.md updated (firmware instructions)**:
+   - Updated M5Burner download link to: https://m5burner-cdn.m5stack.com/app/M5Burner-v3-beta-linux-x64.zip
+   - Added M5Burner GUI method (REQUIRED for Core2)
+   - Added manual esptool method (ONLY for generic MicroPython, NO M5Stack libs)
+   - Explained that UIFlow firmware IS MicroPython (can be used without web interface)
+   - **CRITICAL**: Documented that Core2-specific firmware is NOT available as .bin download
+   - Explained why Fire/Basic firmware is incompatible with Core2 (different hardware)
+   - Updated verification tests to use M5.begin() syntax
+   - Added warnings about manual flashing limitations
+   - Added miniterm examples and exit instructions
+
+7. ✅ **M5Burner setup and firmware flashing**:
+   - Downloaded M5Burner v3 beta for Linux
+   - Launched GUI
+   - Selected: Core2 device + UIFLOW2 firmware (with SPIRAM)
+   - Configuration: GMT+1 (Madrid), Boot option: "Run main.py"
+   - Flash completed successfully (~2-3 minutes)
+   - Port: /dev/ttyACM0
+
+8. ✅ **UIFlow MicroPython verification**:
+   - Connected to REPL via: `python -m serial.tools.miniterm /dev/ttyACM0 115200`
+   - Tested basic MicroPython: `print("The Emperor protects!")` ✅
+   - Tested M5Stack libraries: `import M5; M5.begin()` ✅
+   - Tested display: `M5.Lcd.fillScreen(0x001F); M5.Lcd.print("Emperor protects!")` ✅
+   - Screen displayed blue background with white text correctly
+   - Exit miniterm: Ctrl+T then Q (for Spanish keyboards)
+
+9. ✅ **Code updated for UIFlow API**:
+   - Updated `src/lib/ui.py` completely for UIFlow syntax
+   - Changed from `from m5stack import LCD, Touch, Speaker` to `import M5; M5.begin()`
+   - Updated all LCD methods: `lcd.clear()` → `M5.Lcd.fillScreen()`
+   - Updated all print calls: `lcd.print(text, x, y, color)` → `M5.Lcd.setCursor(x, y); M5.Lcd.setTextColor(color); M5.Lcd.print(text)`
+   - Updated rectangles: `lcd.rect()` → `M5.Lcd.fillRect()`
+   - Updated touch input: `touch.get_count()` → `M5.Touch.getCount()`
+   - All methods updated: show_boot_screen, draw_header, draw_stats, draw_buttons, show_error_screen
+
+10. ✅ **Code deployed to M5Stack**:
+    - Updated `tools/deploy.sh` to use /dev/ttyACM0 as default port
+    - Deployed using: `source .venv/bin/activate && ./tools/deploy.sh`
+    - All files uploaded successfully:
+      - boot.py, main.py, config.py
+      - lib/space_marine.py, lib/ui.py, lib/save_manager.py, lib/chaos_system.py
+      - lib/minigames/__init__.py
+    - Device soft-reset executed
+
+11. ✅ **File structure issue resolved**:
+    - Problem: Deploy script created `src/` directory on device causing import errors
+    - Solution: Modified deploy.sh to copy files individually to device root
+    - Files now correctly at: root/main.py, root/lib/ui.py, etc.
+    - Verified: `os.listdir('lib')` shows all required files
+
+12. ✅ **Touch input working**:
+    - Fixed API calls: `M5.Touch.getX()` and `getY()` instead of getDetail()
+    - Added critical `M5.update()` call before touch detection (required by UIFlow)
+    - Implemented debouncing: 500ms cooldown between touches
+    - All 6 buttons functional: FEED, COMBAT, PRAY, CLEAN, STATUS, POWER
+
+13. ✅ **UI optimizations**:
+    - Reorganized buttons: 2 rows of 3 buttons (fits 320x240 screen)
+    - Button positions: Row 1 at y=195, Row 2 at y=218
+    - All buttons now visible (previous layout had buttons off-screen at y=235+)
+    - POWER button in red (COLOR_CORRUPTION) for visibility
+
+14. ✅ **Power management implemented**:
+    - Added software power-off via M5.Power.powerOff()
+    - Fallback to machine.deepsleep() if powerOff unavailable
+    - Auto-save before power-off
+    - Shutdown screen: "For the Emperor!" → "Powering off..."
+
+15. ✅ **Game fully functional on device**:
+    - Marine displayed on screen with stats
+    - Touch input working with proper debouncing
+    - Stats decay every 60 seconds
+    - Auto-save every 30 seconds
+    - Power off button working
+    - Save/load persistence verified across reboots
+
+16. ✅ **Technical documentation created**:
+    - Created DEVELOPMENT_DAY1.md (comprehensive technical guide)
+    - Documents: hardware setup, UIFlow API, challenges solved, design decisions
+    - Explains non-standard libraries (M5, time.ticks_ms, machine)
+    - Includes performance metrics, testing results, lessons learned
+    - Serves as reference for future development sessions
+
+**SESSION 2024-12-29 COMPLETE** ✅
+
+**Final Status**:
+- ✅ Hardware: M5Stack Core2 v1.1 successfully configured
+- ✅ Firmware: UIFlow MicroPython 2.4.0 flashed and verified
+- ✅ Code: Fully deployed and running on device
+- ✅ UI: Touch input working with 6 functional buttons
+- ✅ Features: Save/load, stat decay, auto-save, power management
+- ✅ Documentation: Complete setup guide + technical deep-dive
+
+**Key Files Modified/Created**:
+- SETUP_MICROPYTHON.md (updated for Core2 specifics + UIFlow)
+- DEVELOPMENT_DAY1.md (NEW - complete technical documentation)
+- src/lib/ui.py (updated for UIFlow M5 API)
+- tools/deploy.sh (fixed file deployment + save cleanup)
+- src/main.py (added power-off handler)
+- .claudememory (this file - session continuity)
+
+**Next Session Goals**:
+1. Optimize rendering (dirty rectangles to reduce flicker)
+2. Add visual feedback on button press
+3. Implement stat bounds checking (0-100 clamping)
+4. Begin evolution system (Neophyte → Scout)
+5. First minigame implementation
+
+---
+
+### Session 2024-12-18 - Initial Setup:
 
 1. ✅ **Complete project structure created**
    - src/ with boot.py, main.py, config.py
@@ -191,15 +337,79 @@ src/
 
 ## CONVERSATION CONTINUITY
 
+### Session 2024-12-29 (Hardware Prep)
+
+**What happened this session**:
+1. ✅ Updated SETUP_MICROPYTHON.md with "🐧 Linux Quick Start (TL;DR)" section
+2. ✅ M5Stack Core2 connected and detected
+3. ✅ Hardware identified: `/dev/ttyACM0` (not ttyUSB0 - uses cdc_acm driver)
+4. ✅ User added to dialout group: `sudo usermod -a -G dialout $USER`
+5. 🔄 User rebooting to apply dialout group membership
+
+**Hardware Details**:
+- Device: M5Stack Core2 v1.1
+- Chip: ESP32 (NOT ESP32-S3) - **CRITICAL: Use `--chip esp32` in esptool commands**
+- USB ID: `1a86:55d4 QinHeng Electronics USB Single Serial`
+- Serial port: `/dev/ttyACM0` (NOT ttyUSB0)
+- Kernel driver: `cdc_acm` (USB ACM device)
+- Port permissions: `crw-rw---- 1 root dialout 166, 0`
+
+**User's laptop**: Sony Vaio running Linux (LainOS i3)
+
+**Flashing UIFlow Firmware** (Two methods available):
+
+**Method 1: M5Burner (GUI - RECOMMENDED)**:
+```bash
+wget https://m5burner-cdn.m5stack.com/app/M5Burner-v3-beta-linux-x64.zip
+unzip M5Burner-v3-beta-linux-x64.zip
+cd M5Burner-v3-beta-linux-x64
+chmod +x M5Burner
+./M5Burner
+# In GUI: Select "Core2" → "UIFLOW2" → Select /dev/ttyACM0 → Click "Burn"
+```
+
+**Method 2: Manual with esptool**:
+```bash
+# 1. Download firmware
+wget https://github.com/m5stack/uiflow-micropython/releases/download/v2.4.0/CORE2_UIFLOW2_v2.4.0.bin
+# (Check releases page for latest: https://github.com/m5stack/uiflow-micropython/releases)
+
+# 2. Erase flash
+esptool.py --chip esp32 --port /dev/ttyACM0 erase_flash
+
+# 3. Flash firmware
+esptool.py --chip esp32 --port /dev/ttyACM0 --baud 460800 write_flash -z 0x0 CORE2_UIFLOW2_v2.4.0.bin
+
+# 4. Reset
+esptool.py --chip esp32 --port /dev/ttyACM0 run
+```
+
+**Verify installation**:
+```bash
+screen /dev/ttyACM0 115200
+# In REPL:
+>>> import M5
+>>> M5.begin()
+>>> print("UIFlow MicroPython working!")
+```
+
+**CRITICAL**:
+- Use `--chip esp32` (NOT esp32s3)
+- Use `/dev/ttyACM0` (NOT /dev/ttyUSB0)
+- UIFlow firmware IS MicroPython v1.25.0 with M5Stack libraries
+- NO need to use UIFlow web interface - program directly via USB
+
+---
+
+### Session 2024-12-18 (Initial Setup)
+
 **Last topic discussed**: Virtual environment setup
 **Last action**: Pushed venv setup files to GitHub (commit 96b624c)
-**User's next likely action**: Flash MicroPython to device
 
-**Context for next session**:
-- User will likely have hardware questions (M5Stack specific)
-- May encounter import errors (m5stack module)
-- Will need help debugging first hardware deployment
-- May want to adjust config.py values after testing
+**Context**:
+- Complete MVP structure created
+- All documentation written
+- Ready for hardware testing
 
 ---
 
