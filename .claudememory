@@ -156,11 +156,12 @@
 
 **Final Status**:
 - ✅ Hardware: M5Stack Core2 v1.1 successfully configured
-- ✅ Firmware: UIFlow MicroPython 2.4.0 flashed and verified
+- ✅ Firmware: UIFlow2 MicroPython (v2.3.8 stable) flashed and verified
 - ✅ Code: Fully deployed and running on device
 - ✅ UI: Touch input working with 6 functional buttons
 - ✅ Features: Save/load, stat decay, auto-save, power management
 - ✅ Documentation: Complete setup guide + technical deep-dive
+- ✅ **CRITICAL FIX (2024-12-30)**: Colors corrected to RGB888 (24-bit), not RGB565
 
 **Key Files Modified/Created**:
 - SETUP_MICROPYTHON.md (updated for Core2 specifics + UIFlow)
@@ -176,6 +177,66 @@
 3. Implement stat bounds checking (0-100 clamping)
 4. Begin evolution system (Neophyte → Scout)
 5. First minigame implementation
+
+---
+
+### Session 2024-12-30 - Color Bug Fix & UIFlow Version Troubleshooting:
+
+**CRITICAL BUG DISCOVERED & FIXED**: UIFlow2 Color Format
+
+**Problem**:
+- After deploying code, colors were completely wrong
+- Red appeared as green/brown
+- Blue appeared as black (missing)
+- White appeared as yellow
+- Only red + green channels working
+
+**Initial Investigation**:
+1. Suspected UIFlow2 beta bug (v2.4.0 from Dec 23, 2025)
+2. Attempted downgrade to UIFlow1 (MicroPython 1.12) - incompatible API
+3. Tried UIFlow2 v2.3.8, v2.3.7 - same color problem
+4. Tested various LCD initialization commands (MADCTL, COLMOD) - no fix
+
+**Key Observation**: Boot menu showed correct colors (including red), but MicroPython runtime showed wrong colors
+
+**ROOT CAUSE DISCOVERED** (with help from daVinci):
+- **UIFlow2 uses RGB888 (24-bit color): `0xRRGGBB`**
+- **Code was using RGB565 (16-bit color): `0xRRRRRGGGGGGBBBBB`**
+- This is **documented behavior**, not a bug!
+
+**Conversion Examples**:
+```python
+# WRONG (RGB565):
+COLOR_RED = 0xF800      # 16-bit
+COLOR_GREEN = 0x07E0
+COLOR_BLUE = 0x001F
+
+# CORRECT (RGB888):
+COLOR_RED = 0xFF0000    # 24-bit
+COLOR_GREEN = 0x00FF00
+COLOR_BLUE = 0x0000FF
+```
+
+**Files Updated**:
+- `src/config.py`: All colors converted to RGB888 (24-bit)
+- `src/lib/ui.py`: Removed hardcoded RGB565 values
+- `DEVELOPMENT_DAY1.md`: Documentation corrected
+- `.claudememory`: This file updated
+
+**Verification Test**:
+Created `tools/fix_and_test_colors.py` (RGB888 format) - ALL COLORS CORRECT:
+- ✅ Red = RED
+- ✅ Green = GREEN
+- ✅ Blue = BLUE
+- ✅ Yellow, Cyan, Magenta all correct
+
+**Final Deployment**:
+- Code deployed with RGB888 colors
+- Game running correctly with proper colors
+- Corruption bar empty (0%) - expected behavior
+
+**Lesson Learned**:
+Always verify color format in API documentation. UIFlow1 vs UIFlow2 may have different expectations. Boot menu can use different color initialization than MicroPython runtime.
 
 ---
 

@@ -115,13 +115,13 @@ class AstartesUI:
         # Color based on chapter/corruption
         if marine.final_chapter:
             if marine.final_chapter == marine.CHAPTER_ULTRAMARINE:
-                color = 0x001F  # Blue
+                color = config.COLOR_GENESEED  # Blue
             elif marine.final_chapter == marine.CHAOS_KHORNE:
                 color = config.COLOR_KHORNE
             else:
-                color = 0x7BEF  # Grey
+                color = config.COLOR_BUTTON_ACTIVE  # Grey
         else:
-            color = 0x7BEF  # Grey (no chapter yet)
+            color = config.COLOR_BUTTON_ACTIVE  # Grey (no chapter yet)
 
         self.M5.Lcd.fillRect(x, y, config.SPRITE_SIZE, config.SPRITE_SIZE, color)
 

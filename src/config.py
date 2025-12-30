@@ -113,30 +113,32 @@ DODGE_WARP_VICTORY_HITS = 3  # 1-3 hits = victory
 DODGE_WARP_DEFEAT_HITS = 6  # 4-6 hits = defeat
 DODGE_WARP_SEVERE_HITS = 7  # 7+ hits = severe defeat
 
-# ===== UI COLORS (RGB565 format) =====
+# ===== UI COLORS (RGB888 24-bit format for UIFlow2) =====
+# UIFlow2 uses 24-bit RGB (0xRRGGBB), NOT RGB565!
+
 # Imperial/Loyalist
-COLOR_IMPERIAL_GOLD = 0xFEA0
-COLOR_AQUILA_WHITE = 0xFFFF
-COLOR_PURITY_SEAL = 0xF800
+COLOR_IMPERIAL_GOLD = 0xFFD700      # Gold
+COLOR_AQUILA_WHITE = 0xFFFFFF       # White
+COLOR_PURITY_SEAL = 0xFF0000        # Red
 
 # Stats
-COLOR_GENESEED = 0x001F  # Blue (purity)
-COLOR_BATTLE_FURY = 0xF800  # Red (combat)
-COLOR_SUSTENANCE = 0x07E0  # Green (food)
-COLOR_DISCIPLINE = 0xFEA0  # Gold (codex)
-COLOR_CORRUPTION = 0x8010  # Purple (chaos)
+COLOR_GENESEED = 0x0000FF           # Blue (purity)
+COLOR_BATTLE_FURY = 0xFF0000        # Red (combat)
+COLOR_SUSTENANCE = 0x00FF00         # Green (food)
+COLOR_DISCIPLINE = 0xFFD700         # Gold (codex)
+COLOR_CORRUPTION = 0x8B00FF         # Purple (chaos)
 
 # Chaos
-COLOR_KHORNE = 0xC800  # Blood red
-COLOR_SLAANESH = 0xF81F  # Pink/purple
-COLOR_NURGLE = 0x07E0  # Putrid green
-COLOR_TZEENTCH = 0x019F  # Arcane blue
+COLOR_KHORNE = 0xCC0000             # Blood red
+COLOR_SLAANESH = 0xFF1493           # Deep pink
+COLOR_NURGLE = 0x7FFF00             # Chartreuse (putrid green)
+COLOR_TZEENTCH = 0x00BFFF           # Deep sky blue
 
 # UI
-COLOR_BG = 0x0000  # Black
-COLOR_TEXT = 0xFFFF  # White
-COLOR_BUTTON = 0x4208  # Dark grey
-COLOR_BUTTON_ACTIVE = 0x7BEF  # Light grey
+COLOR_BG = 0x000000                 # Black
+COLOR_TEXT = 0xFFFFFF               # White
+COLOR_BUTTON = 0x404040             # Dark grey
+COLOR_BUTTON_ACTIVE = 0x808080      # Light grey
 
 # ===== DISPLAY LAYOUT (320x240 screen) =====
 SCREEN_WIDTH = 320

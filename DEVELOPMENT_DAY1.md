@@ -160,7 +160,7 @@ M5.Imu      # IMU (not yet used)
 
 ```python
 # Clear screen
-M5.Lcd.fillScreen(color)  # color is RGB565 format (16-bit)
+M5.Lcd.fillScreen(color)  # color is RGB888 format (24-bit)
 
 # Text rendering
 M5.Lcd.setCursor(x, y)
@@ -172,9 +172,10 @@ M5.Lcd.print(text)
 M5.Lcd.fillRect(x, y, width, height, color)
 ```
 
-**Color Format**: RGB565 (16-bit)
-- Format: `0xRRRRRGGGGGGBBBBB`
-- Example: `0x001F` = Blue, `0xF800` = Red, `0x07E0` = Green
+**Color Format**: RGB888 (24-bit) - **CRITICAL: UIFlow2 uses 24-bit, NOT RGB565!**
+- Format: `0xRRGGBB`
+- Example: `0x0000FF` = Blue, `0xFF0000` = Red, `0x00FF00` = Green
+- **Common mistake**: Using RGB565 values (0xF800 for red) will show wrong colors
 
 ### Touch API (M5.Touch)
 
