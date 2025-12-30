@@ -43,6 +43,16 @@ class AstartesUI:
         self.last_touch_time = 0
         self.touch_cooldown = 500  # milliseconds between touches
 
+        # Dirty rectangles optimization - track previous state
+        self.needs_full_redraw = True  # First render must draw everything
+        self.prev_stats = {
+            'geneseed_purity': None,
+            'battle_fury': None,
+            'sustenance': None,
+            'discipline': None,
+            'corruption': None
+        }
+
     def show_boot_screen(self):
         """Display boot screen"""
         if not self.hardware_available:
@@ -63,7 +73,11 @@ class AstartesUI:
 
     def render(self, marine):
         """
-        Main render loop - update entire screen
+        Main render loop - uses dirty rectangles to minimize flickering
+
+        Only redraws changed elements. Full redraw happens:
+        - On first render (needs_full_redraw = True)
+        - When stats change
 
         Args:
             marine: SpaceMarine instance
@@ -79,12 +93,38 @@ class AstartesUI:
                 print(f"  Corruption: {marine.corruption}%")
             return
 
-        # Render on actual hardware
-        self.draw_background()
-        self.draw_header(marine)
-        self.draw_marine_sprite(marine)
-        self.draw_stats(marine)
-        self.draw_buttons()
+        # Check if stats changed
+        stats_changed = (
+            self.prev_stats['geneseed_purity'] != marine.geneseed_purity or
+            self.prev_stats['battle_fury'] != marine.battle_fury or
+            self.prev_stats['sustenance'] != marine.sustenance or
+            self.prev_stats['discipline'] != marine.discipline or
+            self.prev_stats['corruption'] != marine.corruption
+        )
+
+        # Full redraw on first render or when needed
+        if self.needs_full_redraw:
+            self.draw_background()
+            self.draw_header(marine)
+            self.draw_marine_sprite(marine)
+            self.draw_stats(marine)
+            self.draw_buttons()
+            self.needs_full_redraw = False
+            if config.DEBUG:
+                print(">>> [RENDER] Full screen redraw")
+
+        # Incremental update: only redraw stats if they changed
+        elif stats_changed:
+            self.draw_stats(marine)
+            if config.DEBUG:
+                print(">>> [RENDER] Stats updated")
+
+        # Update previous stats for next frame
+        self.prev_stats['geneseed_purity'] = marine.geneseed_purity
+        self.prev_stats['battle_fury'] = marine.battle_fury
+        self.prev_stats['sustenance'] = marine.sustenance
+        self.prev_stats['discipline'] = marine.discipline
+        self.prev_stats['corruption'] = marine.corruption
 
     def draw_background(self):
         """Draw background"""
@@ -180,6 +220,53 @@ class AstartesUI:
             self.M5.Lcd.setTextSize(1)
             self.M5.Lcd.print(label)
 
+    def _flash_button(self, button_rect, label, normal_color):
+        """
+        Flash button to provide visual and haptic feedback on press
+
+        Args:
+            button_rect: (x, y, w, h) tuple
+            label: Button text
+            normal_color: Normal button color
+        """
+        if not self.hardware_available:
+            return
+
+        x, y, w, h = button_rect
+
+        # Haptic feedback - vibration pulse
+        try:
+            self.M5.Power.setVibration(255)  # Max intensity
+        except:
+            pass  # Vibration not critical, continue if fails
+
+        # Flash to active color
+        self.M5.Lcd.fillRect(x, y, w, h, config.COLOR_BUTTON_ACTIVE)
+        self.M5.Lcd.setCursor(x + 5, y + 8)
+        self.M5.Lcd.setTextColor(config.COLOR_BG)  # Black text on light background
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.print(label)
+
+        # Short delay for visual + haptic feedback
+        import time
+        time.sleep_ms(50)
+
+        # Stop vibration
+        try:
+            self.M5.Power.setVibration(0)
+        except:
+            pass
+
+        # Keep visual flash a bit longer
+        time.sleep_ms(50)
+
+        # Return to normal color
+        self.M5.Lcd.fillRect(x, y, w, h, normal_color)
+        self.M5.Lcd.setCursor(x + 5, y + 8)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.print(label)
+
     def get_input(self):
         """
         Get touch input and return action
@@ -215,23 +302,29 @@ class AstartesUI:
                 # Update last touch time
                 self.last_touch_time = current_time
 
-                # Check which button was pressed
+                # Check which button was pressed and flash it
                 if self._point_in_rect(x, y, self.btn_feed):
+                    self._flash_button(self.btn_feed, "FEED", config.COLOR_BUTTON)
                     print(">>> Button: FEED")
                     return "feed"
                 elif self._point_in_rect(x, y, self.btn_combat):
+                    self._flash_button(self.btn_combat, "COMBAT", config.COLOR_BUTTON)
                     print(">>> Button: COMBAT")
                     return "combat"
                 elif self._point_in_rect(x, y, self.btn_pray):
+                    self._flash_button(self.btn_pray, "PRAY", config.COLOR_BUTTON)
                     print(">>> Button: PRAY")
                     return "pray"
                 elif self._point_in_rect(x, y, self.btn_clean):
+                    self._flash_button(self.btn_clean, "CLEAN", config.COLOR_BUTTON)
                     print(">>> Button: CLEAN")
                     return "clean"
                 elif self._point_in_rect(x, y, self.btn_status):
+                    self._flash_button(self.btn_status, "STATUS", config.COLOR_BUTTON)
                     print(">>> Button: STATUS")
                     return "status"
                 elif self._point_in_rect(x, y, self.btn_power):
+                    self._flash_button(self.btn_power, "POWER", config.COLOR_CORRUPTION)
                     print(">>> Button: POWER OFF")
                     return "power"
                 else:
