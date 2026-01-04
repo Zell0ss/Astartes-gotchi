@@ -489,6 +489,11 @@ def test_ultramarine_evolution():
 - Explain technical tradeoffs when multiple approaches exist
 - Test on device frequently (not just in simulation)
 - Ask for playtesting feedback early and often
+- **IMPORTANT**: Josem handles all device deployments manually - NEVER run `./tools/deploy.sh` or deployment commands automatically
+  - Provide deployment instructions/commands for Josem to run
+  - Update code and prepare files, but let Josem trigger the actual deployment
+  - **Preferred deployment method**: Use `make deploy` (see Makefile for automation)
+  - **Preferred console method**: Use `make console` or `make miniterm` for serial monitoring
 
 ### When Stuck
 - Explain the problem clearly
@@ -501,6 +506,180 @@ def test_ultramarine_evolution():
 - Ask for feedback
 - Note any rough edges or technical debt
 - Update this document if architecture changed
+
+---
+
+## Development Documentation Style Guide
+
+### Purpose of DEVELOPMENT_DAY[X].md Files
+
+These files serve as **technical session logs** that:
+- Document what was built and why
+- Explain technical challenges and solutions
+- Provide code examples for future reference
+- Track lessons learned
+- Serve as onboarding material for future developers
+
+### Document Structure Template
+
+```markdown
+# DEVELOPMENT DAY X - Technical Documentation
+## [Brief Theme/Focus of Session]
+
+**Date**: YYYY-MM-DD
+**Hardware**: M5Stack Core2 v1.1 (ESP32, 320x240 touchscreen, 8MB PSRAM)
+**Firmware**: UIFlow2 MicroPython v2.X.X (based on MicroPython 1.25.0)
+**Development Platform**: [Your platform]
+
+---
+
+## Table of Contents
+1. [Executive Summary](#executive-summary)
+2-9. [Main topics - 3-7 major sections]
+10. [Testing & Validation](#testing--validation)
+11. [Performance Metrics](#performance-metrics) (if applicable)
+12. [Lessons Learned](#lessons-learned)
+13. [Next Steps](#next-steps)
+
+---
+
+## Executive Summary
+
+[2-3 paragraphs summarizing the session]
+- What was built
+- Key achievement (most important win)
+- Phase completion status
+
+---
+
+[... Main content sections ...]
+
+---
+
+## Lessons Learned
+
+### 1. [Lesson Title]
+
+**Issue**: [What problem occurred]
+
+**Lesson**: [What you learned]
+
+**Application**: [How to apply this in future]
+
+---
+
+## Next Steps
+
+### Immediate (Next Session)
+- [ ] Task 1 - **Estimated**: X sessions
+- [ ] Task 2 - **Estimated**: X sessions
+
+### Short-Term (This Week)
+- [ ] Task 3
+- [ ] Task 4
+
+### Medium-Term (This Month)
+- [ ] Task 5
+
+---
+
+## Conclusion
+
+[1-2 paragraphs wrapping up]
+
+**Phase X Status**: ✅ **COMPLETE** or ⏳ In Progress
+
+**Next Phase**: [What's next]
+
+---
+
+**For the Emperor! 🦅⚔️**
+
+*End of Day X Documentation*
+```
+
+### Writing Style Guidelines
+
+**Tone**:
+- Technical but readable
+- Explain the "why" not just the "what"
+- Use active voice ("We implemented" not "Implementation was done")
+- Balance detail with clarity (junior dev should understand)
+
+**Code Examples**:
+- Always include context (file name, line numbers)
+- Show before/after when fixing bugs
+- Comment complex logic
+- Use syntax highlighting (```python)
+
+**Diagrams & Visuals**:
+- Use ASCII art for architecture diagrams
+- Create tables for comparisons
+- Show user flows with arrows (→)
+- Visual hierarchy: ┌─┐ │ └─┘ boxes
+
+**Problem → Solution Structure**:
+```markdown
+### Bug/Challenge Title
+
+**Symptom**: What the user saw
+
+**Investigation**: Steps taken to diagnose
+
+**Root Cause**: Why it happened
+
+**Solution**: How it was fixed (with code)
+
+**Lesson Learned**: What to remember for next time
+```
+
+**Metrics & Numbers**:
+- Always include "before vs after" when optimizing
+- Use tables for multi-metric comparisons
+- Include units (ms, %, MB, etc.)
+- Highlight improvements with percentages
+
+**Code Blocks**:
+```python
+# GOOD: Clear context and explanation
+def should_evolve(self):
+    """
+    Check if marine should evolve to next stage.
+    Uses cumulative time to prevent stage skipping.
+    """
+    age = time.time() - self.birth_timestamp
+    return age >= config.STAGE_DURATION_NEOPHYTE
+
+# Include enough context to understand the code
+# Show the actual implementation, not pseudocode
+# Add comments for non-obvious logic
+```
+
+**Section Length**:
+- Executive Summary: 2-3 paragraphs
+- Main sections: 200-500 words each
+- Code examples: 10-30 lines
+- Lessons Learned: 3-7 items with 50-100 words each
+- Next Steps: Organized by timeframe (Immediate/Short/Medium)
+
+**What to Include**:
+- ✅ Technical details (APIs, algorithms, data structures)
+- ✅ Challenges faced (bugs, design decisions, trade-offs)
+- ✅ Code examples (before/after, key implementations)
+- ✅ Performance metrics (quantified improvements)
+- ✅ Testing results (what was verified, how)
+- ✅ Lessons learned (for future sessions)
+- ❌ Personal commentary (keep it technical)
+- ❌ Unrelated topics (stay focused on the session)
+- ❌ Excessive detail (balance depth with readability)
+
+**File Management**:
+- Create new DEVELOPMENT_DAY[X].md at **end of each session**
+- Update `.claudememory` with session summary
+- Reference in commit messages
+- Add to README.md table of contents (if exists)
+
+**Estimated Time to Write**: 30-45 minutes per session (do it immediately after coding while fresh)
 
 ---
 

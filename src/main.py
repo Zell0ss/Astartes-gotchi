@@ -57,7 +57,16 @@ def main():
             # Handle input (touch buttons)
             action = ui.get_input()
             if action:
-                handle_action(action, marine, ui)
+                should_reset = handle_action(action, marine, ui, save_mgr)
+                if should_reset:
+                    print(">>> RESET REQUESTED - Deleting save and restarting...")
+                    save_mgr.delete_save()
+                    print(">>> Creating new Neophyte...")
+                    marine = SpaceMarine(name=config.DEFAULT_MARINE_NAME)
+                    save_mgr.save(marine.to_dict())
+                    ui.clear_touches()  # Clear any residual touches after reset
+                    ui.needs_full_redraw = True
+                    print(">>> Reset complete! New marine created.")
 
             # Render screen
             ui.render(marine)
@@ -108,8 +117,13 @@ def main():
         print("FOR THE EMPEROR! 🦅\n")
 
 
-def handle_action(action, marine, ui):
-    """Handle player input actions"""
+def handle_action(action, marine, ui, save_mgr):
+    """
+    Handle player input actions
+
+    Returns:
+        bool: True if reset requested, False otherwise
+    """
     print(f">>> Action: {action}")
 
     if action == "feed":
@@ -121,16 +135,18 @@ def handle_action(action, marine, ui):
     elif action == "clean":
         marine.clean()
     elif action == "status":
-        ui.show_status_screen(marine)
+        should_reset = ui.show_status_screen(marine)
+        if should_reset:
+            return True  # Signal reset to main loop
     elif action == "power":
         # Save before power off
-        from lib.save_manager import SaveManager
-        save_mgr = SaveManager()
         save_mgr.save(marine.to_dict())
         print(">>> Saved before power off")
         ui.power_off()
     else:
         print(f">>> Unknown action: {action}")
+
+    return False  # No reset
 
 
 if __name__ == "__main__":

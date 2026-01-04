@@ -97,14 +97,28 @@ class SaveManager:
                 return None
 
     def delete_save(self):
-        """Delete save file (for starting new game)"""
+        """Delete save files (for starting new game)"""
+        import os
+        deleted = False
+
+        # Delete main save
         try:
-            import os
             os.remove(self.SAVE_FILE)
             if config.DEBUG:
                 print(f">>> Save deleted: {self.SAVE_FILE}")
-            return True
+            deleted = True
         except:
             if config.DEBUG:
-                print(">>> No save to delete")
-            return False
+                print(f">>> No save file to delete: {self.SAVE_FILE}")
+
+        # Delete backup save
+        try:
+            os.remove(self.BACKUP_FILE)
+            if config.DEBUG:
+                print(f">>> Backup deleted: {self.BACKUP_FILE}")
+            deleted = True
+        except:
+            if config.DEBUG:
+                print(f">>> No backup file to delete: {self.BACKUP_FILE}")
+
+        return deleted

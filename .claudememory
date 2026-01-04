@@ -302,10 +302,220 @@ COLOR_RED = 0xFF0000  # 24-bit
 - +782 lines, -8 lines
 
 **Next Session Goals (Day 3)**:
-1. Evolution system (Neophyte → Scout transition)
-2. Minigame framework (basic structure)
-3. Sound effects (basic beeps for actions)
-4. Chaos Whispers basics (first implementation)
+1. ✅ Evolution system (Neophyte → Scout transition) - COMPLETED
+2. ⏳ Minigame framework (basic structure) - DEFERRED
+3. ⏳ Sound effects (basic beeps for actions) - DEFERRED
+4. ⏳ Chaos Whispers basics (first implementation) - DEFERRED
+
+---
+
+### Session 2025-01-04 - Evolution System Complete! 🎯
+
+**SESSION COMPLETE** ✅ - Phase 2 FINISHED (ahead of schedule!)
+
+**Summary**: Implemented complete evolution system with all 11 chapters, evolution cutscenes, in-game reset feature, config switcher, and comprehensive touch/haptic improvements.
+
+**Key Achievements**:
+
+1. ✅ **Complete Evolution System**
+   - Time-based evolution triggers (Neophyte → Scout → Battle Brother → Veteran)
+   - Full chapter determination algorithm with 11 paths:
+     - 6 Loyalist: Ultramarine, Grey Knight, Imperial Fist, Blood Angel, Space Wolf, Salamander
+     - 4 Chaos: Khorne Berserker, Noise Marine, Plague Marine, Thousand Sons
+     - Fallback logic for edge cases
+   - All evolution thresholds properly configured in config.py
+
+2. ✅ **Evolution Cutscenes**
+   - Screen flash animation (gold for Loyalist, purple for Chaos)
+   - Stage name transitions with arrow animation (">>>")
+   - Chapter reveal screen for Veterans with:
+     - Chapter-specific colors (blue for Ultramarine, red for Khorne, etc.)
+     - Battle cries: "Courage and Honour!", "BLOOD FOR THE BLOOD GOD!", etc.
+     - 3-second display duration
+   - Triple haptic pulse feedback during evolution
+   - Full redraw trigger after cutscene
+
+3. ✅ **Visual Improvements**
+   - Stage-based sprite scaling: 40px (Neophyte) → 50px (Scout) → 64px (Battle Brother) → 70px (Veteran)
+   - Chapter-specific sprite colors for Veterans
+   - Corruption visual indicator (red/purple border when corruption > 40)
+   - Stage name in header (gold text): "NEOPHYTE", "SCOUT", "BATTLE BROTHER", or chapter name for Veterans
+   - Header color changes based on chapter (gold for Loyalist, god-specific for Chaos)
+
+4. ✅ **In-Game Reset Feature**
+   - STATUS button opens detailed status screen showing:
+     - Combat Experience, Battles (W-L), Care Mistakes
+     - Whispers Resisted/Accepted, Age (cycles)
+   - BACK button returns to game
+   - RESET button (red, destructive action) opens confirmation dialog
+   - Confirmation dialog with WARNING screen:
+     - "This cannot be undone!" warning message
+     - CANCEL (grey) or RESET (red) buttons
+   - Full reset flow: deletes save + backup, creates fresh Neophyte, continues game seamlessly
+
+5. ✅ **Config Switcher System**
+   - Created `Makefile` commands for easy config switching:
+     - `make config-fast` - Switch to 30s/60s/90s evolution (3 min total)
+     - `make config-normal` - Switch to 1h/2d/4d evolution (7 days total)
+     - `make config-status` - Show which config is active
+   - Config files: `src/config_fast.py` and `src/config_normal.py`
+   - Auto-detection of active config in status command
+   - Reminder to deploy after switching
+
+6. ✅ **Touch System Improvements**
+   - Fixed touch coordinate reading: `getDetail()` → `getX()` and `getY()`
+   - Implemented `clear_touches()` method to flush touch queue
+   - Added touch clearing at all screen transitions
+   - Increased debounce delays: 300ms → 500ms for screen entry
+   - Touch clearing before/after all button presses
+   - Eliminated "ghost touches" between screens
+   - Debug logging for all touches in status/reset screens
+
+7. ✅ **Haptic Feedback Hierarchy**
+   - STATUS screen buttons:
+     - BACK: Standard pulse (150 intensity, 100ms)
+     - RESET: Stronger pulse (200 intensity, 150ms) - warning
+   - Reset confirmation buttons:
+     - CANCEL: Standard pulse (150 intensity, 100ms)
+     - CONFIRM: **Double pulse** (250 intensity, 2x) - destructive action
+   - Creates tactile hierarchy: normal → warning → destructive
+
+8. ✅ **Critical Bug Fixes**
+   - **LCD Brightness**: Added `M5.Lcd.setBrightness(80)` in init (screen was black)
+   - **Missing time import**: Added `import time` to ui.py (evolution cutscene crashed)
+   - Both fixes deployed and tested successfully
+
+9. ✅ **Testing Infrastructure**
+   - Created `tools/test_evolution.py` script with:
+     - Accelerated evolution config generator
+     - Chapter prediction test suite
+     - Setup instructions for testing
+   - Successfully tested full evolution sequence on device
+   - Verified all 3 evolution transitions (30s, 60s, 90s)
+   - Confirmed Imperial Fist chapter evolution path
+
+**Files Modified/Created**:
+- `src/lib/ui.py`: Evolution cutscene, status screen, reset confirmation, touch clearing, haptic feedback
+- `src/lib/space_marine.py`: Already had complete evolution logic (no changes needed)
+- `src/lib/save_manager.py`: Enhanced `delete_save()` to remove backup too
+- `src/main.py`: Integrated reset handler in main loop
+- `src/config.py`: All evolution constants already configured
+- `src/config_fast.py`: NEW - Fast evolution config (30s/60s/90s)
+- `src/config_normal.py`: NEW - Normal evolution config (1h/2d/4d)
+- `tools/test_evolution.py`: NEW - Evolution testing script
+- `Makefile`: NEW - Config switcher commands (config-fast, config-normal, config-status)
+- `CLAUDE.md`: Updated with deployment preferences
+- `.claudememory`: This file - Day 3 documentation
+
+**Performance Metrics**:
+- Evolution system: 100% complete (all 11 chapters)
+- Touch bleed-through: Eliminated (500ms debounce + queue flushing)
+- Haptic feedback: 4-tier system (normal/warning/destructive patterns)
+- Testing time: 3 minutes (accelerated) vs 7 days (normal)
+
+**Testing Results**:
+- ✅ Full evolution sequence tested (Neophyte → Scout → Battle Brother → Veteran)
+- ✅ Evolution cutscenes working (screen flash, animations, battle cries)
+- ✅ Chapter determination correct (Imperial Fist path verified)
+- ✅ Status screen functional (all stats displayed)
+- ✅ Reset feature working (confirmation → delete → new Neophyte)
+- ✅ Config switching operational (fast ↔ normal)
+- ✅ Touch debouncing perfect (no ghost touches)
+- ✅ Haptic feedback on all buttons (different intensities)
+
+**Git History**:
+- Multiple commits throughout Day 3
+- Evolution system implementation
+- Bug fixes (brightness, time import)
+- Reset feature
+- Touch improvements
+- Haptic feedback
+
+**Phase Completion**:
+- **Phase 0**: ✅ Complete (Setup)
+- **Phase 1**: ✅ Complete (MVP Core Loop)
+- **Phase 2**: ✅ Complete (Evolution System) - **FINISHED TODAY!**
+- **Phase 3**: ⏳ Next (Corruption & Chaos Whispers)
+
+**MVP Progress**: ~70% → ~75% (Phase 2 complete ahead of schedule!)
+
+**SESSION 2025-01-04 COMPLETE** ✅
+
+**Next Session Goals (Day 4)**:
+1. Chaos Whispers system (Phase 3 start)
+2. First minigame implementation (Heresy Check or Bolter Drill)
+3. Sound effects (basic beeps)
+4. Death sequences (at least 2 types)
+
+---
+
+### Session 2025-01-04 (Part 2) - Documentation Cleanup 📚
+
+**Summary**: Audited all documentation files, removed obsolete/redundant docs, cleaned up README.md
+
+**Key Achievements**:
+
+1. ✅ **Documentation Audit**
+   - Analyzed 13 .md and .txt files in repository root
+   - Categorized as: KEEP (active), OBSOLETE (delete), UPDATE (needs work)
+   - Identified redundancies and outdated information
+
+2. ✅ **Deleted Obsolete Files** (3 files removed):
+   - `PROJECT_STATUS.md` - Outdated (showed Phase 1, we're at Phase 2 complete)
+   - `PROJECT_SUMMARY.txt` - Unmaintained ASCII art summary from Dec 18
+   - `QUICKSTART.md` - Incorrect firmware URLs, contradicted SETUP_MICROPYTHON.md
+
+3. ✅ **README.md Cleanup**
+   - Reduced from 178 lines → 95 lines (46% reduction)
+   - Removed redundant Quick Start details (deferred to SETUP_MICROPYTHON.md)
+   - Removed redundant Development section (deferred to DEVELOPMENT_WORKFLOW.md)
+   - Updated roadmap to current status (Phase 2 complete, ~75% MVP)
+   - Added Makefile commands (config-fast, config-normal, config-status)
+   - Added references to Day 3 work (evolution system, reset, config switcher)
+   - Restructured as clean "landing page" with links to detailed docs
+
+4. ✅ **Documentation Architecture**
+   - **Active docs preserved** (10 files):
+     - CLAUDE.md, DEVELOPMENT_DAY[1-3].md, DEVELOPMENT_WORKFLOW.md
+     - SETUP_MICROPYTHON.md, handover_daVinci_to_Code.md
+     - Makefile, requirements*.txt, .claudememory
+   - **Redundancy eliminated**: No information lost (obsolete files duplicated existing info)
+   - **Clear hierarchy**: README → detailed guides → session logs
+
+**Files Modified**:
+- `README.md`: Complete rewrite (178 → 95 lines)
+- `.claudememory`: This file - documentation cleanup summary
+
+**Files Deleted**:
+- `PROJECT_STATUS.md`
+- `PROJECT_SUMMARY.txt`
+- `QUICKSTART.md`
+
+**Final Documentation Structure**:
+```
+Astartes-gotchi/
+├── README.md                     # Landing page (95 lines, clean)
+├── CLAUDE.md                     # Development guide (active)
+├── SETUP_MICROPYTHON.md          # Firmware setup (active)
+├── DEVELOPMENT_WORKFLOW.md       # VSCode workflow (active)
+├── handover_daVinci_to_Code.md   # Game design doc (active)
+├── DEVELOPMENT_DAY1.md           # Day 1 log (active)
+├── DEVELOPMENT_DAY2.md           # Day 2 log (active)
+├── DEVELOPMENT_DAY3.md           # Day 3 log (active)
+├── Makefile                      # Dev commands (active)
+├── requirements.txt              # Dependencies (active)
+├── requirements-dev.txt          # Dev dependencies (active)
+└── .claudememory                 # Session continuity (active)
+```
+
+**Result**:
+- 13 files → 10 files (23% reduction)
+- README.md now concise entry point
+- All detailed information preserved in specialized docs
+- Zero information loss
+- Clear documentation hierarchy established
+
+**SESSION 2025-01-04 (Part 2) COMPLETE** ✅
 
 ---
 
