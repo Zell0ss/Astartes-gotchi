@@ -519,6 +519,181 @@ Astartes-gotchi/
 
 ---
 
+### Session 2025-01-05 - Chaos Whispers System (Phase 3 - Sessions 1-3) 🔮
+
+**SESSION STATUS**: Sessions 1-3 COMPLETE ✅ (~60% of Phase 3 complete)
+
+**Summary**: Implemented complete Chaos Whispers system foundation with Emperor's Whisper (5th whisper type), all 4 Chaos gods, lore-authentic text, and touch-based challenges (Khorne tapping, Slaanesh slow drag). IMU challenges pending.
+
+**Key Achievements**:
+
+1. ✅ **Session 1 - Foundation** (~2.5 hours)
+   - Updated config.py with accelerated testing timings:
+     - Global cooldown: 60s (vs 2 hours production)
+     - Per-god cooldown: 120s (vs 4 hours production)
+     - Stage frequencies: 60-120s (vs 4-12 hours production)
+     - Challenge thresholds: 15 taps/5s (vs 30 taps/10s production)
+   - Updated config_normal.py with production timings (2-12 hour cooldowns)
+   - Implemented complete ChaosSystem class (~295 lines):
+     - God weight calculation based on marine stats
+     - Weighted random selection with cooldowns
+     - Emperor imposter selection (same weights for plausibility)
+     - Lore text for all 4 Chaos gods (5 variants each)
+     - Emperor's whisper text (5 god-specific imposter variants + undivided)
+   - Added Emperor tracking stats to SpaceMarine:
+     - emperor_whispers_accepted (faith rewarded)
+     - emperor_whispers_resisted_correctly (correctly identified imposter)
+     - emperor_whispers_failed (rejected Emperor's true voice)
+   - Serialization in to_dict() and from_dict()
+
+2. ✅ **Session 2 - Emperor's Whisper UI** (~3 hours)
+   - Implemented present_emperor_whisper() method (~345 lines):
+     - Phase 1: Emperor's voice screen (3 seconds, golden theme, reverent haptic pulse)
+     - Phase 2: Choice screen (ACCEPT vs SUSPECT HERESY)
+     - Phase 3a: Accept path → Blessing screen → Major bonuses
+     - Phase 3b: Suspect path → God identification challenge (5 buttons)
+   - Implemented _emperor_identify_imposter() helper method:
+     - 5-button UI: KHORNE, SLAANESH, NURGLE, TZEENTCH, UNDIVIDED
+     - Color-coded buttons (blood red, deep pink, putrid green, arcane blue, purple)
+     - Correct ID = huge bonus (+25 discipline, -25 corruption)
+     - Wrong ID = corruption penalty (+15 corruption)
+   - Text wrapping algorithm (40 chars/line, max 4 lines)
+   - Haptic feedback hierarchy (triple pulse for blessings, ominous pulse for heresy)
+   - Returns: (choice, correct_id, quality)
+
+3. ✅ **Session 3 - Chaos Whispers + Touch Challenges** (~3.5 hours)
+   - Implemented present_chaos_whisper() method (~260 lines):
+     - Phase 1: Temptation screen (3 seconds, purple corruption theme)
+     - Phase 2: Choice screen (RESIST vs GIVE IN)
+     - Phase 3a: Give in path → Corruption screen
+     - Phase 3b: Resist path → God-specific challenge
+   - Implemented _challenge_khorne() (~95 lines):
+     - Rapid screen tapping (15 taps in 5 seconds for testing)
+     - Tap counter, progress bar, timer
+     - 100ms debouncing between taps
+     - Haptic pulse on EVERY tap
+     - Returns: (success, quality)
+   - Implemented _challenge_slaanesh() (~167 lines):
+     - Slow finger drag (250 pixels in 4-6 seconds for testing)
+     - Speed enforcement: FAIL if > 40 pixels/second
+     - Purple trail circle following finger
+     - Distance/time tracker, progress bar
+     - Failure modes: TOO_FAST, TOO_EAGER, TOO_SLOW, INCOMPLETE
+     - Returns: (success, quality)
+   - Added placeholder stubs for _challenge_nurgle() and _challenge_tzeentch()
+   - Returns: (choice, challenge_success, quality)
+
+**Technical Details**:
+
+*God Trigger System*:
+```python
+# Khorne: Low battle_fury (anger/bloodlust)
+if marine.battle_fury < 40:
+    weight = (40 - marine.battle_fury) / 40.0
+
+# Slaanesh: High stimm_count (addiction/excess)
+if marine.stimm_count > 20:
+    weight = min(marine.stimm_count / 50.0, 1.0)
+
+# Nurgle: High poop_accumulation (decay/acceptance)
+if marine.poop_accumulation > 10:
+    weight = min(marine.poop_accumulation / 30.0, 1.0)
+
+# Tzeentch: 10% random OR warp_medicine use
+tzeentch_random = random.random() < 0.1
+tzeentch_warp = (hasattr(marine, 'warp_medicine_unlocked') and
+                 marine.warp_medicine_unlocked and
+                 marine.warp_medicine_count > 0)
+```
+
+*Emperor Imposter Selection*:
+- Uses same god weights as Chaos whispers for plausibility
+- 30% chance of "undivided" if multiple strong triggers
+- Subtle hints in Emperor's whisper text for lore experts
+
+*Lore Text Examples*:
+```python
+# Khorne (hidden from player):
+"Blood calls to blood, warrior. Why deny your rage?"
+"The weak deserve their fate. Strike them down."
+
+# Emperor impersonated by Khorne (subtle violence emphasis):
+"Stand strong, my son. Let no enemy survive your wrath."
+"Courage through conquest! Show them no mercy!"
+```
+
+*Touch Challenge Mechanics*:
+- Khorne: Tap counter, 100ms debounce, haptic on every tap, 20 FPS render
+- Slaanesh: Speed calculation (distance / deltaTime), immediate fail if > 40 px/s
+
+**Files Modified/Created**:
+- `src/config.py`: Added all Chaos Whisper constants (test timing)
+- `src/config_normal.py`: Added all Chaos Whisper constants (production timing)
+- `src/lib/chaos_system.py`: Complete rewrite (~295 lines)
+- `src/lib/space_marine.py`: Added Emperor tracking stats (3 new fields)
+- `src/lib/ui.py`: Added 1,145 lines (Emperor UI + Chaos UI + challenges)
+- `DEVELOPMENT_DAY4.md`: NEW - Complete Day 4 technical documentation (~550 lines)
+- `.claudememory`: This file - Day 4 session continuity
+
+**Performance Metrics**:
+- Emperor whisper chance: 15% (test config) / 12% (production)
+- Whisper frequency: 60-120s (test) / 4-12 hours (production)
+- Khorne success target: 15 taps in 5s (test) / 30 taps in 10s (production)
+- Slaanesh success window: 4-6s (test) / 8-12s (production)
+- Text wrapping: 40 chars/line, max 4 lines, word-boundary aware
+
+**Testing Results** (via console logs):
+- ✅ ChaosSystem initialization successful
+- ✅ God weight calculation working
+- ✅ Emperor imposter selection working
+- ✅ Lore text templates loaded (20 Chaos + 25 Emperor variants)
+- ⏳ Full UI testing pending (Session 5 integration)
+
+**Git Status**:
+- Not yet committed (waiting for end of session)
+- Ready to commit: 6 files modified, 1 file created
+- Estimated lines: +1,500 (new), -20 (modified)
+
+**Phase Completion**:
+- **Phase 0**: ✅ Complete (Setup)
+- **Phase 1**: ✅ Complete (MVP Core Loop)
+- **Phase 2**: ✅ Complete (Evolution System)
+- **Phase 3**: ⏳ In Progress (~60% complete)
+  - ✅ Session 1: Foundation (ChaosSystem class, configs, Emperor stats)
+  - ✅ Session 2: Emperor's Whisper UI (complete flow)
+  - ✅ Session 3: Chaos Whispers UI + Touch challenges (Khorne, Slaanesh)
+  - ⏳ Session 4: IMU challenges (Nurgle stillness, Tzeentch shake)
+  - ⏳ Session 5: Main loop integration
+  - ⏳ Session 6: Comprehensive testing and balancing
+
+**MVP Progress**: ~75% → ~80% (Phase 3 halfway complete!)
+
+**SESSION 2025-01-05 PAUSED** ⏸️
+
+**Next Session Goals (Day 4 continuation - Session 4)**:
+1. ⏳ Research M5.Imu API (test M5.Imu.getGyro() in REPL)
+2. ⏳ Implement _challenge_nurgle() (stillness detection via IMU)
+3. ⏳ Implement _challenge_tzeentch() (shake detection via IMU)
+4. ⏳ Calibrate IMU thresholds on actual hardware
+5. ⏳ Add fallback touch-based alternatives if IMU unreliable
+
+**Immediate TODO (for resuming tomorrow)**:
+- Test whisper system integration in main.py
+- Verify all UI flows work on device
+- Test Emperor whisper (both accept/resist paths)
+- Test Chaos whispers for all 4 gods
+- Continue with Session 4 (IMU challenges)
+
+**Where to Continue Tomorrow**:
+1. **Read**: `DEVELOPMENT_DAY4.md` for complete context on Sessions 1-3
+2. **Read**: Plan file at `/home/josem/.claude/plans/rosy-waddling-hinton.md` for full implementation plan
+3. **Start**: Session 4 - IMU Challenges (Nurgle + Tzeentch)
+4. **Test**: M5.Imu.getGyro() API in REPL first
+5. **Implement**: _challenge_nurgle() and _challenge_tzeentch()
+6. **Calibrate**: IMU thresholds via hardware testing
+
+---
+
 ### Session 2024-12-18 - Initial Setup:
 
 1. ✅ **Complete project structure created**

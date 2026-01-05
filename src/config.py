@@ -87,14 +87,38 @@ PRAYER_DISCIPLINE_BOOST = 5
 PRAYER_COOLDOWN = 30  # 30 seconds (was 3 hours)
 PRAYER_CORRUPTION_LOCKOUT = 80
 
-# ===== CHAOS WHISPER FREQUENCIES (disabled for evolution testing) =====
-WHISPER_FREQUENCY_SCOUT_MIN = 28800
-WHISPER_FREQUENCY_SCOUT_MAX = 43200
-WHISPER_FREQUENCY_BATTLE_BROTHER_MIN = 14400
-WHISPER_FREQUENCY_BATTLE_BROTHER_MAX = 21600
-WHISPER_FREQUENCY_VETERAN_MIN = 7200
-WHISPER_FREQUENCY_VETERAN_MAX = 14400
-WHISPER_TIMEOUT = 30
+# ===== CHAOS WHISPER SYSTEM (ACCELERATED FOR TESTING) =====
+# Emperor's Whisper
+EMPEROR_WHISPER_CHANCE = 0.15  # 15% chance to get Emperor whisper instead of Chaos
+
+# Cooldowns (ACCELERATED)
+WHISPER_COOLDOWN_GLOBAL = 60  # 1 minute between ANY whispers
+WHISPER_COOLDOWN_PER_GOD = 120  # 2 minutes before same god can appear again
+
+# Stage-based frequencies (minimum time between whispers)
+WHISPER_FREQUENCY_NEOPHYTE = 120  # 2 minutes (rare for beginners)
+WHISPER_FREQUENCY_SCOUT = 90  # 1.5 minutes
+WHISPER_FREQUENCY_BATTLE_BROTHER = 60  # 1 minute
+WHISPER_FREQUENCY_VETERAN = 60  # 1 minute (constant temptation)
+
+# Khorne Challenge (Rapid Tapping)
+KHORNE_TAP_TARGET = 15  # 15 taps required (half of production)
+KHORNE_DURATION = 5.0  # 5 seconds to complete
+
+# Slaanesh Challenge (Slow Drag)
+SLAANESH_MIN_TIME = 4.0  # Minimum drag duration (seconds)
+SLAANESH_MAX_TIME = 6.0  # Maximum drag duration (seconds)
+SLAANESH_MIN_DISTANCE = 250  # Minimum pixels to drag
+SLAANESH_MAX_SPEED = 40  # Maximum pixels/second (enforced!)
+
+# Nurgle Challenge (Stillness)
+NURGLE_DURATION = 5.0  # 5 seconds of stillness
+NURGLE_MOVEMENT_THRESHOLD = 0.2  # G-force threshold (needs IMU calibration)
+
+# Tzeentch Challenge (Shake/Rotate)
+TZEENTCH_DURATION = 4.0  # 4 seconds to complete
+TZEENTCH_SHAKE_THRESHOLD = 1.5  # G-force threshold (needs IMU calibration)
+TZEENTCH_REQUIRED_SHAKES = 8  # Required shake count (half of production)
 
 # ===== MINIGAME SCORING (unchanged) =====
 HERESY_CHECK_VICTORY_MIN = 8

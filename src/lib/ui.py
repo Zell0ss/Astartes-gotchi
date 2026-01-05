@@ -922,3 +922,897 @@ class AstartesUI:
                 # Fallback: deep sleep (functionally similar to power off)
                 import machine
                 machine.deepsleep()
+
+    def present_emperor_whisper(self, imposter_god, chaos_system):
+        """
+        Present Emperor's whisper event (Phase 3)
+
+        The player must choose:
+        - ACCEPT: Trust it's the Emperor (safe choice, major blessings)
+        - SUSPECT HERESY: Try to identify which Chaos god is impersonating
+
+        Args:
+            imposter_god: Which god is impersonating ("khorne", "slaanesh", "nurgle", "tzeentch", "undivided")
+            chaos_system: ChaosSystem instance for getting whisper text
+
+        Returns:
+            tuple: (choice, correct_id, quality)
+                   choice: "accept" or "resist"
+                   correct_id: True if correctly identified imposter (only relevant if resist)
+                   quality: 1.0 for accept, 0.0-1.0 for resist based on correctness
+        """
+        if not self.hardware_available:
+            return ("accept", True, 1.0)
+
+        # Clear any pending touches
+        self.clear_touches()
+
+        # === PHASE 1: Emperor's Voice Screen (3 seconds) ===
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+        # Golden border (Emperor's color)
+        self.M5.Lcd.drawRect(5, 5, 310, 230, config.COLOR_IMPERIAL_GOLD)
+        self.M5.Lcd.drawRect(6, 6, 308, 228, config.COLOR_IMPERIAL_GOLD)
+
+        # Title
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+        self.M5.Lcd.setCursor(40, 30)
+        self.M5.Lcd.print("A VOICE SPEAKS...")
+
+        # Get Emperor's whisper text (subtly hints at imposter)
+        whisper_text = chaos_system.get_emperor_whisper_text(imposter_god)
+
+        # Display whisper text (wrap manually if needed)
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+
+        # Simple text wrapping (split on spaces, ~40 chars per line)
+        words = whisper_text.split()
+        lines = []
+        current_line = ""
+        for word in words:
+            if len(current_line) + len(word) + 1 <= 40:
+                current_line += (" " if current_line else "") + word
+            else:
+                lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+
+        # Draw wrapped text
+        y_pos = 90
+        for line in lines[:4]:  # Max 4 lines
+            self.M5.Lcd.setCursor(20, y_pos)
+            self.M5.Lcd.print(line)
+            y_pos += 20
+
+        # Aquila symbol (simplified as text)
+        self.M5.Lcd.setTextSize(3)
+        self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+        self.M5.Lcd.setCursor(130, 175)
+        self.M5.Lcd.print("***")
+
+        # Haptic pulse (reverent)
+        try:
+            self.M5.Power.setVibration(200)
+            time.sleep(0.2)
+            self.M5.Power.setVibration(0)
+        except:
+            pass
+
+        # Display for 3 seconds
+        time.sleep(3.0)
+
+        # === PHASE 2: Choice Screen ===
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+        # Question
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setCursor(50, 40)
+        self.M5.Lcd.print("Is this truly")
+        self.M5.Lcd.setCursor(50, 65)
+        self.M5.Lcd.print("the Emperor?")
+
+        # ACCEPT button (left, golden)
+        accept_rect = (10, 140, 140, 70)
+        self.M5.Lcd.fillRect(*accept_rect, config.COLOR_IMPERIAL_GOLD)
+        self.M5.Lcd.setCursor(35, 165)
+        self.M5.Lcd.setTextColor(config.COLOR_BG)
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.print("ACCEPT")
+
+        # SUSPECT HERESY button (right, red)
+        suspect_rect = (170, 140, 140, 70)
+        self.M5.Lcd.fillRect(*suspect_rect, config.COLOR_BATTLE_FURY)
+        self.M5.Lcd.setCursor(180, 155)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.print("SUSPECT")
+        self.M5.Lcd.setCursor(185, 175)
+        self.M5.Lcd.print("HERESY")
+
+        # Wait for screen to settle
+        time.sleep(0.5)
+        self.clear_touches()
+
+        if config.DEBUG:
+            print(f">>> [EMPEROR WHISPER] Imposter: {imposter_god}, waiting for choice...")
+
+        # Wait for choice
+        choice = None
+        while choice is None:
+            self.M5.update()
+
+            try:
+                touch_count = self.M5.Touch.getCount()
+                if touch_count > 0:
+                    x = self.M5.Touch.getX()
+                    y = self.M5.Touch.getY()
+
+                    if self._point_in_rect(x, y, accept_rect):
+                        # ACCEPT - faith rewarded!
+                        if config.DEBUG:
+                            print(">>> [EMPEROR WHISPER] Player ACCEPTED")
+
+                        # Haptic feedback
+                        try:
+                            self.M5.Power.setVibration(150)
+                            time.sleep(0.1)
+                            self.M5.Power.setVibration(0)
+                        except:
+                            pass
+
+                        time.sleep(0.2)
+                        self.clear_touches()
+                        choice = "accept"
+
+                    elif self._point_in_rect(x, y, suspect_rect):
+                        # SUSPECT HERESY - test of knowledge!
+                        if config.DEBUG:
+                            print(">>> [EMPEROR WHISPER] Player SUSPECTS HERESY")
+
+                        # Haptic feedback
+                        try:
+                            self.M5.Power.setVibration(200)
+                            time.sleep(0.1)
+                            self.M5.Power.setVibration(0)
+                        except:
+                            pass
+
+                        time.sleep(0.2)
+                        self.clear_touches()
+                        choice = "resist"
+            except Exception as e:
+                if config.DEBUG:
+                    print(f">>> [EMPEROR WHISPER] Touch error: {e}")
+
+            time.sleep(0.1)
+
+        # === PHASE 3: Handle Choice ===
+        if choice == "accept":
+            # Show blessing screen
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+            self.M5.Lcd.setCursor(10, 80)
+            self.M5.Lcd.print("The Emperor")
+            self.M5.Lcd.setCursor(40, 110)
+            self.M5.Lcd.print("Protects!")
+
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setCursor(45, 150)
+            self.M5.Lcd.print("Your faith is rewarded")
+
+            # Triple pulse (blessing)
+            try:
+                for _ in range(3):
+                    self.M5.Power.setVibration(180)
+                    time.sleep(0.1)
+                    self.M5.Power.setVibration(0)
+                    time.sleep(0.1)
+            except:
+                pass
+
+            time.sleep(2.0)
+            self.clear_touches()
+            return ("accept", True, 1.0)
+
+        else:  # choice == "resist"
+            # === PHASE 4: God Identification Challenge ===
+            identified_god = self._emperor_identify_imposter()
+
+            # Check if correct
+            correct_id = (identified_god == imposter_god)
+
+            if config.DEBUG:
+                print(f">>> [EMPEROR WHISPER] Player identified: {identified_god}, Actual: {imposter_god}, Correct: {correct_id}")
+
+            # Show result screen
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+            if correct_id:
+                # CORRECT! Maximum reward
+                self.M5.Lcd.setTextSize(2)
+                self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+                self.M5.Lcd.setCursor(20, 60)
+                self.M5.Lcd.print("HERESY")
+                self.M5.Lcd.setCursor(20, 90)
+                self.M5.Lcd.print("DETECTED!")
+
+                self.M5.Lcd.setTextSize(1)
+                self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+                self.M5.Lcd.setCursor(15, 130)
+                self.M5.Lcd.print("Your faith is")
+                self.M5.Lcd.setCursor(15, 150)
+                self.M5.Lcd.print("unshakeable!")
+
+                # Strong triple pulse
+                try:
+                    for _ in range(3):
+                        self.M5.Power.setVibration(250)
+                        time.sleep(0.15)
+                        self.M5.Power.setVibration(0)
+                        time.sleep(0.1)
+                except:
+                    pass
+
+            else:
+                # WRONG! Rejected the Emperor
+                self.M5.Lcd.setTextSize(2)
+                self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+                self.M5.Lcd.setCursor(30, 60)
+                self.M5.Lcd.print("TEST OF")
+                self.M5.Lcd.setCursor(40, 90)
+                self.M5.Lcd.print("FAITH")
+                self.M5.Lcd.setCursor(40, 120)
+                self.M5.Lcd.print("FAILED")
+
+                self.M5.Lcd.setTextSize(1)
+                self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+                self.M5.Lcd.setCursor(25, 160)
+                self.M5.Lcd.print("You rejected Him...")
+
+                # Ominous single long pulse
+                try:
+                    self.M5.Power.setVibration(200)
+                    time.sleep(0.5)
+                    self.M5.Power.setVibration(0)
+                except:
+                    pass
+
+            time.sleep(2.5)
+            self.clear_touches()
+
+            quality = 1.0 if correct_id else 0.0
+            return ("resist", correct_id, quality)
+
+    def _emperor_identify_imposter(self):
+        """
+        Show god identification screen (5 buttons)
+        Player must identify which Chaos god is impersonating the Emperor
+
+        Returns:
+            str: God name selected by player
+        """
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+        # Title
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setCursor(30, 15)
+        self.M5.Lcd.print("Which Chaos god dares")
+        self.M5.Lcd.setCursor(50, 35)
+        self.M5.Lcd.print("impersonate Him?")
+
+        # 5 buttons arranged: 2 rows of 2, 1 on bottom
+        # Row 1: Khorne, Slaanesh
+        # Row 2: Nurgle, Tzeentch
+        # Row 3: Undivided (centered)
+
+        buttons = {
+            'khorne': (10, 70, 145, 50, config.COLOR_KHORNE, "KHORNE"),
+            'slaanesh': (165, 70, 145, 50, config.COLOR_SLAANESH, "SLAANESH"),
+            'nurgle': (10, 130, 145, 50, config.COLOR_NURGLE, "NURGLE"),
+            'tzeentch': (165, 130, 145, 50, config.COLOR_TZEENTCH, "TZEENTCH"),
+            'undivided': (85, 190, 150, 40, config.COLOR_CORRUPTION, "UNDIVIDED")
+        }
+
+        # Draw all buttons
+        for god, (x, y, w, h, color, label) in buttons.items():
+            self.M5.Lcd.fillRect(x, y, w, h, color)
+            self.M5.Lcd.setCursor(x + 10, y + 20)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.print(label)
+
+        # Wait for screen to settle
+        time.sleep(0.5)
+        self.clear_touches()
+
+        if config.DEBUG:
+            print(">>> [EMPEROR WHISPER] Showing god identification screen...")
+
+        # Wait for selection
+        while True:
+            self.M5.update()
+
+            try:
+                touch_count = self.M5.Touch.getCount()
+                if touch_count > 0:
+                    x = self.M5.Touch.getX()
+                    y = self.M5.Touch.getY()
+
+                    # Check each button
+                    for god, (bx, by, bw, bh, color, label) in buttons.items():
+                        if bx <= x <= bx + bw and by <= y <= by + bh:
+                            if config.DEBUG:
+                                print(f">>> [EMPEROR WHISPER] Player identified: {god.upper()}")
+
+                            # Haptic feedback
+                            try:
+                                self.M5.Power.setVibration(180)
+                                time.sleep(0.1)
+                                self.M5.Power.setVibration(0)
+                            except:
+                                pass
+
+                            time.sleep(0.2)
+                            self.clear_touches()
+                            return god
+            except Exception as e:
+                if config.DEBUG:
+                    print(f">>> [EMPEROR WHISPER] Touch error: {e}")
+
+            time.sleep(0.1)
+
+    def present_chaos_whisper(self, god, chaos_system):
+        """
+        Present Chaos whisper event (Phase 3)
+
+        The player must choose:
+        - RESIST: Run god-specific challenge (player does NOT know which god!)
+        - GIVE IN: Accept corruption immediately
+
+        Args:
+            god: Which Chaos god ("khorne", "slaanesh", "nurgle", "tzeentch")
+            chaos_system: ChaosSystem instance for getting whisper text
+
+        Returns:
+            tuple: (choice, challenge_success, quality)
+                   choice: "resist" or "give_in"
+                   challenge_success: True if resist challenge succeeded
+                   quality: 0.0-1.0 performance score
+        """
+        if not self.hardware_available:
+            return ("resist", True, 1.0)
+
+        # Clear any pending touches
+        self.clear_touches()
+
+        # === PHASE 1: Temptation Screen (3 seconds) ===
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+        # Purple/corruption border
+        self.M5.Lcd.drawRect(5, 5, 310, 230, config.COLOR_CORRUPTION)
+        self.M5.Lcd.drawRect(6, 6, 308, 228, config.COLOR_CORRUPTION)
+
+        # Title
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+        self.M5.Lcd.setCursor(20, 30)
+        self.M5.Lcd.print("A VOICE WHISPERS...")
+
+        # Get Chaos whisper text (god identity HIDDEN!)
+        whisper_text = chaos_system.get_chaos_whisper_text(god)
+
+        # Display whisper text (wrap manually if needed)
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+
+        # Simple text wrapping (split on spaces, ~40 chars per line)
+        words = whisper_text.split()
+        lines = []
+        current_line = ""
+        for word in words:
+            if len(current_line) + len(word) + 1 <= 40:
+                current_line += (" " if current_line else "") + word
+            else:
+                lines.append(current_line)
+                current_line = word
+        if current_line:
+            lines.append(current_line)
+
+        # Draw wrapped text
+        y_pos = 90
+        for line in lines[:4]:  # Max 4 lines
+            self.M5.Lcd.setCursor(20, y_pos)
+            self.M5.Lcd.print(line)
+            y_pos += 20
+
+        # Ominous symbol
+        self.M5.Lcd.setTextSize(3)
+        self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+        self.M5.Lcd.setCursor(130, 175)
+        self.M5.Lcd.print("...")
+
+        # Haptic pulse (ominous)
+        try:
+            self.M5.Power.setVibration(200)
+            time.sleep(0.2)
+            self.M5.Power.setVibration(0)
+        except:
+            pass
+
+        # Display for 3 seconds
+        time.sleep(3.0)
+
+        # === PHASE 2: Choice Screen ===
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+        # Question
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setCursor(30, 40)
+        self.M5.Lcd.print("The whisper")
+        self.M5.Lcd.setCursor(50, 65)
+        self.M5.Lcd.print("tempts you...")
+
+        # RESIST button (left, gold)
+        resist_rect = (10, 140, 140, 70)
+        self.M5.Lcd.fillRect(*resist_rect, config.COLOR_IMPERIAL_GOLD)
+        self.M5.Lcd.setCursor(35, 165)
+        self.M5.Lcd.setTextColor(config.COLOR_BG)
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.print("RESIST")
+
+        # GIVE IN button (right, corruption purple)
+        give_in_rect = (170, 140, 140, 70)
+        self.M5.Lcd.fillRect(*give_in_rect, config.COLOR_CORRUPTION)
+        self.M5.Lcd.setCursor(185, 155)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.print("GIVE IN")
+
+        # Wait for screen to settle
+        time.sleep(0.5)
+        self.clear_touches()
+
+        if config.DEBUG:
+            print(f">>> [CHAOS WHISPER] God: {god}, waiting for choice...")
+
+        # Wait for choice
+        choice = None
+        while choice is None:
+            self.M5.update()
+
+            try:
+                touch_count = self.M5.Touch.getCount()
+                if touch_count > 0:
+                    x = self.M5.Touch.getX()
+                    y = self.M5.Touch.getY()
+
+                    if self._point_in_rect(x, y, resist_rect):
+                        # RESIST - run challenge!
+                        if config.DEBUG:
+                            print(">>> [CHAOS WHISPER] Player RESISTS")
+
+                        # Haptic feedback
+                        try:
+                            self.M5.Power.setVibration(150)
+                            time.sleep(0.1)
+                            self.M5.Power.setVibration(0)
+                        except:
+                            pass
+
+                        time.sleep(0.2)
+                        self.clear_touches()
+                        choice = "resist"
+
+                    elif self._point_in_rect(x, y, give_in_rect):
+                        # GIVE IN - immediate corruption!
+                        if config.DEBUG:
+                            print(">>> [CHAOS WHISPER] Player GIVES IN")
+
+                        # Haptic feedback
+                        try:
+                            self.M5.Power.setVibration(200)
+                            time.sleep(0.1)
+                            self.M5.Power.setVibration(0)
+                        except:
+                            pass
+
+                        time.sleep(0.2)
+                        self.clear_touches()
+                        choice = "give_in"
+            except Exception as e:
+                if config.DEBUG:
+                    print(f">>> [CHAOS WHISPER] Touch error: {e}")
+
+            time.sleep(0.1)
+
+        # === PHASE 3: Handle Choice ===
+        if choice == "give_in":
+            # Show corruption screen
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+            self.M5.Lcd.setCursor(30, 80)
+            self.M5.Lcd.print("You embrace")
+            self.M5.Lcd.setCursor(30, 110)
+            self.M5.Lcd.print("the darkness...")
+
+            # Double pulse (corruption)
+            try:
+                for _ in range(2):
+                    self.M5.Power.setVibration(200)
+                    time.sleep(0.15)
+                    self.M5.Power.setVibration(0)
+                    time.sleep(0.1)
+            except:
+                pass
+
+            time.sleep(2.0)
+            self.clear_touches()
+            return ("give_in", False, 0.0)
+
+        else:  # choice == "resist"
+            # === PHASE 4: Run God-Specific Challenge ===
+            # Player does NOT know which god!
+            if god == "khorne":
+                challenge_success, quality = self._challenge_khorne()
+            elif god == "slaanesh":
+                challenge_success, quality = self._challenge_slaanesh()
+            elif god == "nurgle":
+                challenge_success, quality = self._challenge_nurgle()
+            elif god == "tzeentch":
+                challenge_success, quality = self._challenge_tzeentch()
+            else:
+                # Fallback (shouldn't happen)
+                challenge_success, quality = (False, 0.0)
+
+            # Show result screen
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+            if challenge_success:
+                # SUCCESS! Resisted corruption
+                self.M5.Lcd.setTextSize(2)
+                self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+                self.M5.Lcd.setCursor(10, 80)
+                self.M5.Lcd.print("Faith holds")
+                self.M5.Lcd.setCursor(40, 110)
+                self.M5.Lcd.print("strong!")
+
+                self.M5.Lcd.setTextSize(1)
+                self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+                self.M5.Lcd.setCursor(30, 150)
+                self.M5.Lcd.print("The Emperor protects")
+
+                # Triple pulse (victory)
+                try:
+                    for _ in range(3):
+                        self.M5.Power.setVibration(180)
+                        time.sleep(0.1)
+                        self.M5.Power.setVibration(0)
+                        time.sleep(0.1)
+                except:
+                    pass
+
+            else:
+                # FAILED! Succumbed to corruption
+                self.M5.Lcd.setTextSize(2)
+                self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+                self.M5.Lcd.setCursor(20, 80)
+                self.M5.Lcd.print("Will falters...")
+
+                self.M5.Lcd.setTextSize(1)
+                self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+                self.M5.Lcd.setCursor(20, 130)
+                self.M5.Lcd.print("Corruption takes hold")
+
+                # Ominous pulse
+                try:
+                    self.M5.Power.setVibration(200)
+                    time.sleep(0.4)
+                    self.M5.Power.setVibration(0)
+                except:
+                    pass
+
+            time.sleep(2.0)
+            self.clear_touches()
+
+            return ("resist", challenge_success, quality)
+
+    def _challenge_khorne(self):
+        """
+        Khorne challenge: Rapid screen tapping
+
+        Success: Tap screen >= TAP_TARGET times within DURATION seconds
+        Theme: Violence, action, bloodlust
+
+        Returns:
+            tuple: (success, quality)
+                   success: True if target reached
+                   quality: 0.0-1.0 based on tap count
+        """
+        if not self.hardware_available:
+            return (True, 1.0)
+
+        tap_count = 0
+        start_time = time.time()
+        last_tap_time = 0
+
+        self.clear_touches()
+
+        if config.DEBUG:
+            print(f">>> [KHORNE CHALLENGE] Start - Target: {config.KHORNE_TAP_TARGET} taps in {config.KHORNE_DURATION}s")
+
+        # Main challenge loop
+        while True:
+            elapsed = time.time() - start_time
+            if elapsed >= config.KHORNE_DURATION:
+                break
+
+            # Render progress
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+            # Title
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+            self.M5.Lcd.setCursor(20, 30)
+            self.M5.Lcd.print("RESIST THE")
+            self.M5.Lcd.setCursor(40, 55)
+            self.M5.Lcd.print("WHISPER!")
+
+            # Tap counter
+            self.M5.Lcd.setTextSize(3)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setCursor(100, 100)
+            self.M5.Lcd.print(str(tap_count))
+
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.setCursor(80, 135)
+            self.M5.Lcd.print(f"of {config.KHORNE_TAP_TARGET}")
+
+            # Progress bar
+            progress = tap_count / config.KHORNE_TAP_TARGET
+            bar_width = int(280 * min(progress, 1.0))
+            bar_color = config.COLOR_IMPERIAL_GOLD if progress < 1.0 else config.COLOR_TEXT
+            self.M5.Lcd.fillRect(20, 170, bar_width, 20, bar_color)
+
+            # Timer
+            remaining = config.KHORNE_DURATION - elapsed
+            self.M5.Lcd.setCursor(120, 205)
+            self.M5.Lcd.print(f"{remaining:.1f}s")
+
+            # Check for tap
+            self.M5.update()
+            try:
+                if self.M5.Touch.getCount() > 0:
+                    current_time = time.time()
+                    # Debounce (100ms between taps)
+                    if current_time - last_tap_time > 0.1:
+                        tap_count += 1
+                        last_tap_time = current_time
+
+                        # Haptic feedback on each tap
+                        try:
+                            self.M5.Power.setVibration(100)
+                            time.sleep(0.05)
+                            self.M5.Power.setVibration(0)
+                        except:
+                            pass
+
+                        if config.DEBUG and tap_count % 5 == 0:
+                            print(f">>> [KHORNE] Taps: {tap_count}/{config.KHORNE_TAP_TARGET}")
+            except:
+                pass
+
+            time.sleep(0.05)  # 20 FPS for responsive input
+
+        # Calculate result
+        success = tap_count >= config.KHORNE_TAP_TARGET
+        quality = min(tap_count / config.KHORNE_TAP_TARGET, 1.0)
+
+        if config.DEBUG:
+            print(f">>> [KHORNE CHALLENGE] Complete - Taps: {tap_count}, Success: {success}, Quality: {quality:.2f}")
+
+        self.clear_touches()
+        return (success, quality)
+
+    def _challenge_slaanesh(self):
+        """
+        Slaanesh challenge: Slow finger drag
+
+        Success: Drag finger across screen in time window (MIN_TIME to MAX_TIME)
+                 Must maintain speed <= MAX_SPEED pixels/second
+                 Must complete MIN_DISTANCE pixels
+
+        Theme: Excess, indulgence, sensuality (slow and deliberate)
+
+        Returns:
+            tuple: (success, quality)
+                   success: True if drag completed correctly
+                   quality: 0.0-1.0 based on smoothness
+        """
+        if not self.hardware_available:
+            return (True, 1.0)
+
+        start_pos = None
+        last_pos = None
+        total_distance = 0
+        drag_start_time = None
+        last_check_time = time.time()
+        failed = False
+        fail_reason = ""
+
+        self.clear_touches()
+
+        if config.DEBUG:
+            print(f">>> [SLAANESH CHALLENGE] Start - Drag {config.SLAANESH_MIN_DISTANCE}px in {config.SLAANESH_MIN_TIME}-{config.SLAANESH_MAX_TIME}s")
+
+        # Main challenge loop
+        while True:
+            # Render progress
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+
+            # Title
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+            self.M5.Lcd.setCursor(20, 20)
+            self.M5.Lcd.print("RESIST THE")
+            self.M5.Lcd.setCursor(40, 45)
+            self.M5.Lcd.print("WHISPER!")
+
+            # Instructions or status
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            if start_pos is None:
+                self.M5.Lcd.setCursor(30, 90)
+                self.M5.Lcd.print("Drag finger SLOWLY")
+                self.M5.Lcd.setCursor(50, 110)
+                self.M5.Lcd.print("across screen")
+            else:
+                elapsed = time.time() - drag_start_time
+                self.M5.Lcd.setCursor(50, 90)
+                self.M5.Lcd.print(f"Distance: {int(total_distance)}")
+                self.M5.Lcd.setCursor(50, 110)
+                self.M5.Lcd.print(f"Time: {elapsed:.1f}s")
+
+            # Progress bar
+            progress = total_distance / config.SLAANESH_MIN_DISTANCE
+            bar_width = int(280 * min(progress, 1.0))
+            bar_color = config.COLOR_CORRUPTION if progress < 1.0 else config.COLOR_IMPERIAL_GOLD
+            self.M5.Lcd.fillRect(20, 150, bar_width, 20, bar_color)
+
+            # Draw trail if dragging
+            if last_pos:
+                lx, ly = last_pos
+                # Draw a small circle at finger position
+                self.M5.Lcd.fillCircle(lx, ly, 5, config.COLOR_CORRUPTION)
+
+            # Check for touch
+            self.M5.update()
+            try:
+                touch_count = self.M5.Touch.getCount()
+                current_time = time.time()
+
+                if touch_count > 0:
+                    x = self.M5.Touch.getX()
+                    y = self.M5.Touch.getY()
+
+                    if start_pos is None:
+                        # Begin drag
+                        start_pos = (x, y)
+                        last_pos = (x, y)
+                        drag_start_time = current_time
+                        last_check_time = current_time
+
+                        if config.DEBUG:
+                            print(f">>> [SLAANESH] Drag started at ({x}, {y})")
+
+                    else:
+                        # Continue drag - calculate movement
+                        dx = x - last_pos[0]
+                        dy = y - last_pos[1]
+                        distance = (dx**2 + dy**2) ** 0.5
+
+                        dt = current_time - last_check_time
+                        if dt > 0:
+                            speed = distance / dt
+
+                            # Check if too fast
+                            if speed > config.SLAANESH_MAX_SPEED:
+                                failed = True
+                                fail_reason = "TOO FAST!"
+                                if config.DEBUG:
+                                    print(f">>> [SLAANESH] FAILED - Speed: {speed:.1f} px/s (max: {config.SLAANESH_MAX_SPEED})")
+                                break
+
+                        total_distance += distance
+                        last_pos = (x, y)
+                        last_check_time = current_time
+
+                        # Check if completed
+                        if total_distance >= config.SLAANESH_MIN_DISTANCE:
+                            elapsed = current_time - drag_start_time
+
+                            if config.SLAANESH_MIN_TIME <= elapsed <= config.SLAANESH_MAX_TIME:
+                                # SUCCESS!
+                                if config.DEBUG:
+                                    print(f">>> [SLAANESH] SUCCESS - Distance: {total_distance:.1f}, Time: {elapsed:.1f}s")
+                                self.clear_touches()
+                                return (True, 1.0)
+
+                            elif elapsed < config.SLAANESH_MIN_TIME:
+                                failed = True
+                                fail_reason = "TOO EAGER!"
+                                if config.DEBUG:
+                                    print(f">>> [SLAANESH] FAILED - Too fast ({elapsed:.1f}s < {config.SLAANESH_MIN_TIME}s)")
+                                break
+
+                            else:  # elapsed > MAX_TIME
+                                failed = True
+                                fail_reason = "TOO SLOW!"
+                                if config.DEBUG:
+                                    print(f">>> [SLAANESH] FAILED - Too slow ({elapsed:.1f}s > {config.SLAANESH_MAX_TIME}s)")
+                                break
+
+                else:
+                    # Finger lifted
+                    if start_pos is not None:
+                        elapsed = current_time - drag_start_time
+
+                        if total_distance < config.SLAANESH_MIN_DISTANCE:
+                            failed = True
+                            fail_reason = "INCOMPLETE!"
+                            if config.DEBUG:
+                                print(f">>> [SLAANESH] FAILED - Finger lifted, distance: {total_distance:.1f}")
+                            break
+
+            except:
+                pass
+
+            time.sleep(0.05)  # 20 FPS
+
+        # Failed
+        if failed:
+            # Show failure reason briefly
+            self.M5.Lcd.fillScreen(config.COLOR_BG)
+            self.M5.Lcd.setTextSize(2)
+            self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+            self.M5.Lcd.setCursor(60, 100)
+            self.M5.Lcd.print(fail_reason)
+            time.sleep(1.0)
+
+        self.clear_touches()
+        quality = min(total_distance / config.SLAANESH_MIN_DISTANCE, 1.0) if start_pos else 0.0
+        return (False, quality)
+
+    def _challenge_nurgle(self):
+        """
+        Nurgle challenge: Device stillness (IMU-based)
+        Placeholder - will be implemented in Session 4
+
+        Returns:
+            tuple: (success, quality)
+        """
+        if config.DEBUG:
+            print(">>> [NURGLE CHALLENGE] Placeholder - not yet implemented")
+        return (False, 0.0)
+
+    def _challenge_tzeentch(self):
+        """
+        Tzeentch challenge: Device shake/rotation (IMU-based)
+        Placeholder - will be implemented in Session 4
+
+        Returns:
+            tuple: (success, quality)
+        """
+        if config.DEBUG:
+            print(">>> [TZEENTCH CHALLENGE] Placeholder - not yet implemented")
+        return (False, 0.0)

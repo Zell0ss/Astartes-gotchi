@@ -48,6 +48,11 @@ class SpaceMarine:
         self.discipline_failures = 0
         self.chaos_whispers_resisted = 0
         self.chaos_whispers_accepted = 0
+
+        # Emperor's Whisper tracking (Phase 3)
+        self.emperor_whispers_accepted = 0  # Accepted Emperor's guidance
+        self.emperor_whispers_resisted_correctly = 0  # Correctly identified imposter
+        self.emperor_whispers_failed = 0  # Wrongly rejected Emperor
         self.battles_won = 0
         self.battles_lost = 0
 
@@ -423,6 +428,9 @@ class SpaceMarine:
             "discipline_failures": self.discipline_failures,
             "chaos_whispers_resisted": self.chaos_whispers_resisted,
             "chaos_whispers_accepted": self.chaos_whispers_accepted,
+            "emperor_whispers_accepted": self.emperor_whispers_accepted,
+            "emperor_whispers_resisted_correctly": self.emperor_whispers_resisted_correctly,
+            "emperor_whispers_failed": self.emperor_whispers_failed,
             "battles_won": self.battles_won,
             "battles_lost": self.battles_lost,
 
@@ -470,6 +478,9 @@ class SpaceMarine:
         marine.discipline_failures = data.get("discipline_failures", 0)
         marine.chaos_whispers_resisted = data.get("chaos_whispers_resisted", 0)
         marine.chaos_whispers_accepted = data.get("chaos_whispers_accepted", 0)
+        marine.emperor_whispers_accepted = data.get("emperor_whispers_accepted", 0)
+        marine.emperor_whispers_resisted_correctly = data.get("emperor_whispers_resisted_correctly", 0)
+        marine.emperor_whispers_failed = data.get("emperor_whispers_failed", 0)
         marine.battles_won = data.get("battles_won", 0)
         marine.battles_lost = data.get("battles_lost", 0)
 
