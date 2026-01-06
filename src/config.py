@@ -102,7 +102,7 @@ WHISPER_FREQUENCY_BATTLE_BROTHER = 60  # 1 minute
 WHISPER_FREQUENCY_VETERAN = 60  # 1 minute (constant temptation)
 
 # Khorne Challenge (Rapid Tapping)
-KHORNE_TAP_TARGET = 15  # 15 taps required (half of production)
+KHORNE_TAP_TARGET = 20  # 20 taps required (test mode - raw frame counting, achievable)
 KHORNE_DURATION = 5.0  # 5 seconds to complete
 
 # Slaanesh Challenge (Slow Drag)
@@ -113,12 +113,12 @@ SLAANESH_MAX_SPEED = 40  # Maximum pixels/second (enforced!)
 
 # Nurgle Challenge (Stillness)
 NURGLE_DURATION = 5.0  # 5 seconds of stillness
-NURGLE_MOVEMENT_THRESHOLD = 0.2  # G-force threshold (needs IMU calibration)
+NURGLE_MOVEMENT_THRESHOLD = 0.1  # G-force threshold (CALIBRATED: quiet=0.00-0.01, movement=0.02-0.05)
 
 # Tzeentch Challenge (Shake/Rotate)
 TZEENTCH_DURATION = 4.0  # 4 seconds to complete
-TZEENTCH_SHAKE_THRESHOLD = 1.5  # G-force threshold (needs IMU calibration)
-TZEENTCH_REQUIRED_SHAKES = 8  # Required shake count (half of production)
+TZEENTCH_SHAKE_THRESHOLD = 0.5  # G-force threshold (LOWERED: shake peaks=0.31-2.42, using lower threshold)
+TZEENTCH_REQUIRED_SHAKES = 5  # Required shake count (test mode - easy for testing)
 
 # ===== MINIGAME SCORING (unchanged) =====
 HERESY_CHECK_VICTORY_MIN = 8

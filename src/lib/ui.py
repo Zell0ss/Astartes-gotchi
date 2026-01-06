@@ -1544,12 +1544,13 @@ class AstartesUI:
 
         tap_count = 0
         start_time = time.time()
-        last_tap_time = 0
+        vibration_end_time = 0
 
         self.clear_touches()
 
         if config.DEBUG:
             print(f">>> [KHORNE CHALLENGE] Start - Target: {config.KHORNE_TAP_TARGET} taps in {config.KHORNE_DURATION}s")
+            print(f">>> [KHORNE] Raw frame counting - no debounce, no filters!")
 
         # Main challenge loop
         while True:
@@ -1589,30 +1590,37 @@ class AstartesUI:
             self.M5.Lcd.setCursor(120, 205)
             self.M5.Lcd.print(f"{remaining:.1f}s")
 
-            # Check for tap
+            # Check for tap - RAW COUNTING (no filters!)
             self.M5.update()
+            current_time = time.time()
+
             try:
                 if self.M5.Touch.getCount() > 0:
-                    current_time = time.time()
-                    # Debounce (100ms between taps)
-                    if current_time - last_tap_time > 0.1:
-                        tap_count += 1
-                        last_tap_time = current_time
+                    # Count every frame with touch - no debounce, no edge detection
+                    tap_count += 1
 
-                        # Haptic feedback on each tap
+                    # Haptic feedback every 10 taps (to avoid constant vibration)
+                    if tap_count % 10 == 0 and vibration_end_time == 0:
                         try:
-                            self.M5.Power.setVibration(100)
-                            time.sleep(0.05)
-                            self.M5.Power.setVibration(0)
+                            self.M5.Power.setVibration(120)
+                            vibration_end_time = current_time + 0.04
                         except:
                             pass
 
-                        if config.DEBUG and tap_count % 5 == 0:
-                            print(f">>> [KHORNE] Taps: {tap_count}/{config.KHORNE_TAP_TARGET}")
+                    if config.DEBUG and tap_count % 10 == 0:
+                        print(f">>> [KHORNE] Taps: {tap_count}/{config.KHORNE_TAP_TARGET}")
             except:
                 pass
 
-            time.sleep(0.05)  # 20 FPS for responsive input
+            # Stop vibration if time elapsed (non-blocking)
+            if vibration_end_time > 0 and current_time >= vibration_end_time:
+                try:
+                    self.M5.Power.setVibration(0)
+                    vibration_end_time = 0
+                except:
+                    pass
+
+            time.sleep(0.02)  # 50 FPS for very responsive input
 
         # Calculate result
         success = tap_count >= config.KHORNE_TAP_TARGET
@@ -1654,6 +1662,10 @@ class AstartesUI:
 
         if config.DEBUG:
             print(f">>> [SLAANESH CHALLENGE] Start - Drag {config.SLAANESH_MIN_DISTANCE}px in {config.SLAANESH_MIN_TIME}-{config.SLAANESH_MAX_TIME}s")
+
+        # Extra clear + delay to avoid phantom touches from previous screen
+        time.sleep(0.3)
+        self.clear_touches()
 
         # Main challenge loop
         while True:
@@ -1796,23 +1808,399 @@ class AstartesUI:
     def _challenge_nurgle(self):
         """
         Nurgle challenge: Device stillness (IMU-based)
-        Placeholder - will be implemented in Session 4
+
+        Player must hold device completely still for NURGLE_DURATION seconds.
+        Uses accelerometer only (gyro has too much drift).
+
+        Theme: Nurgle demands ACCEPTANCE and STILLNESS. Embrace the decay,
+        stop struggling, just... rest.
 
         Returns:
             tuple: (success, quality)
+                - success: True if stayed still for required duration
+                - quality: 0.0-1.0 based on how still (lower movement = higher quality)
         """
+        import math
+
         if config.DEBUG:
-            print(">>> [NURGLE CHALLENGE] Placeholder - not yet implemented")
-        return (False, 0.0)
+            print(">>> [NURGLE CHALLENGE] Stillness detection starting...")
+
+        # Clear any pending touches
+        self.clear_touches()
+
+        # Challenge parameters
+        duration = config.NURGLE_DURATION  # 5s test, 10s production
+        movement_threshold = config.NURGLE_MOVEMENT_THRESHOLD  # 0.1 G-force
+
+        # Show instruction screen
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.setCursor(20, 10)
+        self.M5.Lcd.print("RESIST THE WHISPER!")
+
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.setCursor(20, 50)
+        self.M5.Lcd.print("Hold device COMPLETELY")
+        self.M5.Lcd.setCursor(20, 70)
+        self.M5.Lcd.print("STILL. Do not move.")
+        self.M5.Lcd.setCursor(20, 90)
+        self.M5.Lcd.print("Accept the stillness...")
+
+        time.sleep(2)
+        self.clear_touches()  # Clear any touches from instruction screen
+
+        # Challenge loop
+        start_time = time.time()
+        total_movement = 0.0
+        movement_violations = 0
+        last_check_time = start_time
+        sample_count = 0
+
+        if config.DEBUG:
+            print(f">>> [NURGLE] Duration: {duration}s, Threshold: {movement_threshold}G")
+
+        while True:
+            self.M5.update()
+            current_time = time.time()
+            elapsed = current_time - start_time
+
+            # Check if duration complete
+            if elapsed >= duration:
+                # Success!
+                quality = max(0.0, 1.0 - (movement_violations / (sample_count + 1)))
+                if config.DEBUG:
+                    print(f">>> [NURGLE] SUCCESS! Violations: {movement_violations}/{sample_count}, Quality: {quality:.2f}")
+
+                # Success screen
+                self.M5.Lcd.fillScreen(config.COLOR_BG)
+                self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+                self.M5.Lcd.setTextSize(2)
+                self.M5.Lcd.setCursor(40, 80)
+                self.M5.Lcd.print("RESISTED!")
+                self.M5.Lcd.setTextSize(1)
+                self.M5.Lcd.setCursor(30, 120)
+                self.M5.Lcd.print("Discipline triumphs!")
+
+                # Triple haptic pulse (victory)
+                self.M5.Power.setVibration(150)
+                time.sleep(0.1)
+                self.M5.Power.setVibration(0)
+                time.sleep(0.05)
+                self.M5.Power.setVibration(150)
+                time.sleep(0.1)
+                self.M5.Power.setVibration(0)
+                time.sleep(0.05)
+                self.M5.Power.setVibration(150)
+                time.sleep(0.1)
+                self.M5.Power.setVibration(0)
+
+                time.sleep(2)
+                self.clear_touches()
+                return (True, quality)
+
+            # Read accelerometer
+            try:
+                accel = self.M5.Imu.getAccel()
+                accel_x, accel_y, accel_z = accel
+
+                # Calculate magnitude (remove gravity)
+                accel_mag = math.sqrt(accel_x*accel_x + accel_y*accel_y + accel_z*accel_z)
+                movement = abs(accel_mag - 1.0)  # 1.0 = Earth's gravity
+
+                # Check for movement violation
+                if movement > movement_threshold:
+                    movement_violations += 1
+                    if config.DEBUG and movement_violations % 5 == 0:
+                        print(f">>> [NURGLE] Movement detected: {movement:.3f}G (violations: {movement_violations})")
+
+                    # FAIL if too much movement (more than 30% of samples)
+                    if movement_violations > (sample_count * 0.3) and sample_count > 10:
+                        if config.DEBUG:
+                            print(f">>> [NURGLE] FAIL! Too much movement: {movement_violations}/{sample_count}")
+
+                        # Failure screen
+                        self.M5.Lcd.fillScreen(config.COLOR_BG)
+                        self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+                        self.M5.Lcd.setTextSize(2)
+                        self.M5.Lcd.setCursor(50, 80)
+                        self.M5.Lcd.print("FAILED!")
+                        self.M5.Lcd.setTextSize(1)
+                        self.M5.Lcd.setCursor(40, 120)
+                        self.M5.Lcd.print("You moved too much!")
+
+                        # Failure haptic (single long pulse)
+                        self.M5.Power.setVibration(100)
+                        time.sleep(0.3)
+                        self.M5.Power.setVibration(0)
+
+                        time.sleep(2)
+                        self.clear_touches()
+                        quality = max(0.0, 1.0 - (movement_violations / (sample_count + 1)))
+                        return (False, quality)
+
+                total_movement += movement
+                sample_count += 1
+
+            except Exception as e:
+                if config.DEBUG:
+                    print(f">>> [NURGLE] IMU error: {e}")
+                # If IMU fails, consider it a fail
+                return (False, 0.0)
+
+            # Update display (every 10 samples = ~500ms)
+            if sample_count % 10 == 0:
+                remaining = duration - elapsed
+
+                # Clear display area
+                self.M5.Lcd.fillRect(0, 120, 320, 120, config.COLOR_BG)
+
+                # Progress bar
+                progress = elapsed / duration
+                bar_width = int(280 * progress)
+                self.M5.Lcd.fillRect(20, 140, bar_width, 15, config.COLOR_IMPERIAL_GOLD)
+                self.M5.Lcd.drawRect(20, 140, 280, 15, config.COLOR_TEXT)
+
+                # Timer
+                self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+                self.M5.Lcd.setTextSize(2)
+                self.M5.Lcd.setCursor(120, 170)
+                self.M5.Lcd.print("{:.1f}s".format(remaining))
+
+                # Movement indicator (if recent violation)
+                if movement_violations > 0 and (sample_count - movement_violations < 5):
+                    self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+                    self.M5.Lcd.setTextSize(1)
+                    self.M5.Lcd.setCursor(100, 210)
+                    self.M5.Lcd.print("Movement!")
+
+            time.sleep(0.05)  # 20 Hz sampling
 
     def _challenge_tzeentch(self):
         """
         Tzeentch challenge: Device shake/rotation (IMU-based)
-        Placeholder - will be implemented in Session 4
+
+        Player must shake device vigorously to reach required shake count.
+        Uses accelerometer to detect high-G spikes.
+
+        Theme: Tzeentch demands CHANGE and CHAOS. Shake the bones of fate,
+        disturb the warp, embrace mutation!
 
         Returns:
             tuple: (success, quality)
+                - success: True if reached required shake count in time
+                - quality: 0.0-1.0 based on shake intensity and timing
         """
+        import math
+
         if config.DEBUG:
-            print(">>> [TZEENTCH CHALLENGE] Placeholder - not yet implemented")
-        return (False, 0.0)
+            print(">>> [TZEENTCH CHALLENGE] Shake detection starting...")
+
+        # Clear any pending touches
+        self.clear_touches()
+
+        # Challenge parameters
+        duration = config.TZEENTCH_DURATION  # 4s test, 8s production
+        shake_threshold = config.TZEENTCH_SHAKE_THRESHOLD  # 0.8 G-force
+        required_shakes = config.TZEENTCH_REQUIRED_SHAKES  # 8 test, 15 production
+
+        # Show instruction screen
+        self.M5.Lcd.fillScreen(config.COLOR_BG)
+        self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+        self.M5.Lcd.setTextSize(2)
+        self.M5.Lcd.setCursor(20, 10)
+        self.M5.Lcd.print("RESIST THE WHISPER!")
+
+        self.M5.Lcd.setTextSize(1)
+        self.M5.Lcd.setCursor(20, 50)
+        self.M5.Lcd.print("SHAKE the device!")
+        self.M5.Lcd.setCursor(20, 70)
+        self.M5.Lcd.print("Disturb the warp!")
+        self.M5.Lcd.setCursor(20, 90)
+        self.M5.Lcd.print("Chaos demands change!")
+
+        time.sleep(2)
+        self.clear_touches()  # Clear any touches from instruction screen
+
+        # Challenge loop
+        start_time = time.time()
+        shake_count = 0
+        last_shake_time = 0
+        shake_debounce = 0.05  # 50ms between shakes (very fast shake detection)
+        total_intensity = 0.0
+        peak_intensity = 0.0
+        vibration_end_time = 0  # Track when to stop vibration
+
+        if config.DEBUG:
+            print(f">>> [TZEENTCH] Duration: {duration}s, Target: {required_shakes} shakes, Threshold: {shake_threshold}G")
+
+        while True:
+            self.M5.update()
+            current_time = time.time()
+            elapsed = current_time - start_time
+
+            # Check if duration expired
+            if elapsed >= duration:
+                # Time's up - did we succeed?
+                success = shake_count >= required_shakes
+                quality = min(1.0, shake_count / required_shakes) if required_shakes > 0 else 0.0
+
+                if success:
+                    if config.DEBUG:
+                        print(f">>> [TZEENTCH] SUCCESS! Shakes: {shake_count}/{required_shakes}, Quality: {quality:.2f}")
+
+                    # Success screen
+                    self.M5.Lcd.fillScreen(config.COLOR_BG)
+                    self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+                    self.M5.Lcd.setTextSize(2)
+                    self.M5.Lcd.setCursor(40, 80)
+                    self.M5.Lcd.print("RESISTED!")
+                    self.M5.Lcd.setTextSize(1)
+                    self.M5.Lcd.setCursor(20, 120)
+                    self.M5.Lcd.print("Warp disturbance ended!")
+
+                    # Triple haptic pulse (victory)
+                    self.M5.Power.setVibration(150)
+                    time.sleep(0.1)
+                    self.M5.Power.setVibration(0)
+                    time.sleep(0.05)
+                    self.M5.Power.setVibration(150)
+                    time.sleep(0.1)
+                    self.M5.Power.setVibration(0)
+                    time.sleep(0.05)
+                    self.M5.Power.setVibration(150)
+                    time.sleep(0.1)
+                    self.M5.Power.setVibration(0)
+
+                    time.sleep(2)
+                    self.clear_touches()
+                    return (True, quality)
+                else:
+                    if config.DEBUG:
+                        print(f">>> [TZEENTCH] FAIL! Only {shake_count}/{required_shakes} shakes")
+
+                    # Failure screen
+                    self.M5.Lcd.fillScreen(config.COLOR_BG)
+                    self.M5.Lcd.setTextColor(config.COLOR_CORRUPTION)
+                    self.M5.Lcd.setTextSize(2)
+                    self.M5.Lcd.setCursor(50, 80)
+                    self.M5.Lcd.print("FAILED!")
+                    self.M5.Lcd.setTextSize(1)
+                    self.M5.Lcd.setCursor(40, 120)
+                    self.M5.Lcd.print("Not enough shakes!")
+
+                    # Failure haptic (single long pulse)
+                    self.M5.Power.setVibration(100)
+                    time.sleep(0.3)
+                    self.M5.Power.setVibration(0)
+
+                    time.sleep(2)
+                    self.clear_touches()
+                    return (False, quality)
+
+            # Read accelerometer
+            try:
+                accel = self.M5.Imu.getAccel()
+                accel_x, accel_y, accel_z = accel
+
+                # Calculate magnitude (remove gravity)
+                accel_mag = math.sqrt(accel_x*accel_x + accel_y*accel_y + accel_z*accel_z)
+                movement = abs(accel_mag - 1.0)  # 1.0 = Earth's gravity
+
+                # Detect shake (high acceleration spike)
+                if movement > shake_threshold:
+                    # Debounce - only count if enough time since last shake
+                    if current_time - last_shake_time > shake_debounce:
+                        shake_count += 1
+                        last_shake_time = current_time
+                        total_intensity += movement
+                        peak_intensity = max(peak_intensity, movement)
+
+                        if config.DEBUG:
+                            print(f">>> [TZEENTCH] SHAKE #{shake_count}! Intensity: {movement:.2f}G")
+
+                        # Haptic pulse on each shake - non-blocking!
+                        try:
+                            self.M5.Power.setVibration(120)
+                            vibration_end_time = current_time + 0.04  # Vibrate for 40ms
+                        except:
+                            pass
+
+                        # Check if we reached target early (instant success)
+                        if shake_count >= required_shakes:
+                            quality = 1.0 + (0.2 * (duration - elapsed) / duration)  # Bonus for speed
+                            quality = min(1.0, quality)
+
+                            if config.DEBUG:
+                                print(f">>> [TZEENTCH] TARGET REACHED EARLY! Quality: {quality:.2f}")
+
+                            # Success screen
+                            self.M5.Lcd.fillScreen(config.COLOR_BG)
+                            self.M5.Lcd.setTextColor(config.COLOR_IMPERIAL_GOLD)
+                            self.M5.Lcd.setTextSize(2)
+                            self.M5.Lcd.setCursor(40, 80)
+                            self.M5.Lcd.print("RESISTED!")
+                            self.M5.Lcd.setTextSize(1)
+                            self.M5.Lcd.setCursor(20, 120)
+                            self.M5.Lcd.print("Warp disturbance ended!")
+
+                            # Triple haptic pulse (victory)
+                            self.M5.Power.setVibration(150)
+                            time.sleep(0.1)
+                            self.M5.Power.setVibration(0)
+                            time.sleep(0.05)
+                            self.M5.Power.setVibration(150)
+                            time.sleep(0.1)
+                            self.M5.Power.setVibration(0)
+                            time.sleep(0.05)
+                            self.M5.Power.setVibration(150)
+                            time.sleep(0.1)
+                            self.M5.Power.setVibration(0)
+
+                            time.sleep(2)
+                            self.clear_touches()
+                            return (True, quality)
+
+            except Exception as e:
+                if config.DEBUG:
+                    print(f">>> [TZEENTCH] IMU error: {e}")
+                # Continue even if IMU fails occasionally
+                pass
+
+            # Update display (every frame = 50ms)
+            remaining = duration - elapsed
+
+            # Clear display area
+            self.M5.Lcd.fillRect(0, 120, 320, 120, config.COLOR_BG)
+
+            # Shake counter (big and prominent)
+            self.M5.Lcd.setTextColor(config.COLOR_TZEENTCH)
+            self.M5.Lcd.setTextSize(3)
+            self.M5.Lcd.setCursor(100, 130)
+            self.M5.Lcd.print("{:2d}".format(shake_count))
+
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.setCursor(110, 165)
+            self.M5.Lcd.print("of {}".format(required_shakes))
+
+            # Progress bar
+            progress = shake_count / required_shakes if required_shakes > 0 else 0
+            bar_width = int(280 * progress)
+            self.M5.Lcd.fillRect(20, 185, bar_width, 10, config.COLOR_TZEENTCH)
+            self.M5.Lcd.drawRect(20, 185, 280, 10, config.COLOR_TEXT)
+
+            # Timer
+            self.M5.Lcd.setTextColor(config.COLOR_TEXT)
+            self.M5.Lcd.setTextSize(1)
+            self.M5.Lcd.setCursor(130, 210)
+            self.M5.Lcd.print("{:.1f}s".format(remaining))
+
+            # Stop vibration if time elapsed (non-blocking)
+            if vibration_end_time > 0 and time.time() >= vibration_end_time:
+                try:
+                    self.M5.Power.setVibration(0)
+                    vibration_end_time = 0
+                except:
+                    pass
+
+            time.sleep(0.02)  # 50 Hz refresh for responsive detection

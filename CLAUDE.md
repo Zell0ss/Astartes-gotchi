@@ -478,6 +478,17 @@ def test_ultramarine_evolution():
 
 ## Communication Protocol with Josem
 
+### Language & Documentation
+- **Session communication**: Spanish is fine for discussions and planning
+- **ALL project documentation**: Must be written in ENGLISH
+  - Code comments: English
+  - Docstrings: English
+  - DEVELOPMENT_DAY[X].md files: English
+  - README, CLAUDE.md, and all .md files: English
+  - Commit messages: English
+  - Only exception: This language protocol note itself can reference Spanish
+- **Reasoning**: Project is open-source, Warhammer 40K lore is in English, wider reach
+
 ### When Starting a Session
 1. Read latest commits/changes
 2. Ask about priorities for current session

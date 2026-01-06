@@ -1,7 +1,7 @@
 # Astartes-Gotchi Makefile
 # For the Emperor! 🦅
 
-.PHONY: help deploy miniterm console config-fast config-normal config-status
+.PHONY: help deploy miniterm console config-fast config-normal config-status test-imu test-challenges restore-main
 
 # Default port for M5Stack Core2
 PORT := /dev/ttyACM0
@@ -12,6 +12,10 @@ help:
 	@echo "  make deploy         - Deploy code to M5Stack Core2"
 	@echo "  make miniterm       - Open serial console (miniterm)"
 	@echo "  make console        - Alias for miniterm"
+	@echo ""
+	@echo "  make test-imu       - Deploy IMU test script (auto-backup main.py)"
+	@echo "  make test-challenges - Deploy Chaos challenges test (auto-backup main.py)"
+	@echo "  make restore-main   - Restore original main.py (after tests)"
 	@echo ""
 	@echo "  make config-fast    - Switch to FAST evolution config (30s/60s/90s)"
 	@echo "  make config-normal  - Switch to NORMAL evolution config (1h/2d/4d)"
@@ -69,3 +73,48 @@ config-status:
 	@echo "Available configs:"
 	@if [ -f src/config_fast.py ]; then echo "  ✓ src/config_fast.py (fast)"; else echo "  ✗ src/config_fast.py (missing)"; fi
 	@if [ -f src/config_normal.py ]; then echo "  ✓ src/config_normal.py (normal)"; else echo "  ✗ src/config_normal.py (missing)"; fi
+
+test-imu:
+	@echo "🧪 Deploying IMU test script..."
+	@echo "⚠️  Close any open serial console first (Ctrl+T → Q)"
+	@sleep 2
+	@echo "📦 Backing up current main.py on device..."
+	@mpremote connect $(PORT) cp :main.py :main.py.backup 2>/dev/null || echo "  (No existing main.py, skipping backup)"
+	@echo "🚀 Uploading tools/test_imu.py as main.py..."
+	@mpremote connect $(PORT) cp tools/test_imu.py :main.py
+	@echo "♻️  Resetting device..."
+	@mpremote connect $(PORT) reset
+	@echo ""
+	@echo "✅ IMU test deployed!"
+	@echo "📡 Open console to see output: make console"
+	@echo "🔄 When done testing: make restore-main"
+
+test-challenges:
+	@echo "🔥 Deploying Chaos Challenges test..."
+	@echo "⚠️  Close any open serial console first (Ctrl+T → Q)"
+	@sleep 2
+	@echo "📦 Ensuring full project is deployed first..."
+	@./tools/deploy.sh $(PORT)
+	@echo "📦 Backing up current main.py on device..."
+	@mpremote connect $(PORT) cp :main.py :main.py.backup
+	@echo "🚀 Uploading tools/test_chaos_challenges.py as main.py..."
+	@mpremote connect $(PORT) cp tools/test_chaos_challenges.py :main.py
+	@echo "♻️  Resetting device..."
+	@mpremote connect $(PORT) reset
+	@echo ""
+	@echo "✅ Chaos Challenges test deployed!"
+	@echo "📡 Open console to see output: make console"
+	@echo "🎮 Touch screen to start each challenge"
+	@echo "🔄 When done testing: make restore-main"
+
+restore-main:
+	@echo "🔄 Restoring original main.py..."
+	@mpremote connect $(PORT) cp :main.py.backup :main.py || { \
+		echo "❌ Error: No backup found!"; \
+		echo "💡 Deploy full project: make deploy"; \
+		exit 1; \
+	}
+	@echo "♻️  Resetting device..."
+	@mpremote connect $(PORT) reset
+	@echo "✅ Original main.py restored!"
+	@echo "📡 Open console to verify: make console"
